@@ -1,0 +1,1553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SigInspector - Statsig Event Log &amp; Inspector</title>
+  <meta name="description" content="Catch every initialize call, gate check, and event the SDK fires — as it happens, with full JSON detail.">
+  <meta property="og:title" content="SigInspector — Statsig DevTools Extension">
+  <meta property="og:description" content="Catch every initialize call, gate check, and event the SDK fires — as it happens, with full JSON detail.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="dns-prefetch" href="https://developer.chrome.com">
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/png" sizes="16x16" href="statsig-extension/icons/icon16.png">
+  <link rel="icon" type="image/png" sizes="48x48" href="statsig-extension/icons/icon48.png">
+  <link rel="icon" type="image/png" sizes="128x128" href="statsig-extension/icons/icon128.png">
+  <style>
+    /* ── Reset ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    /* ── Design Tokens ── */
+    :root {
+      --bg:       #F4F4F2;
+      --card:     #FFFFFF;
+      --bar:      #EDECE9;
+      --well:     #E5E4E1;
+      --line:     #E0DFDC;
+      --line-hi:  #C9C8C4;
+      --ink:      #1A1917;
+      --ink2:     #6B6A67;
+      --ink3:     #AEADA9;
+      --a:        #EE5B2A;
+      --a-soft:   rgba(238,91,42,0.08);
+      --a-ring:   rgba(238,91,42,0.20);
+      --sans:     'Bricolage Grotesque', system-ui, sans-serif;
+      --body:     'Instrument Sans', system-ui, -apple-system, sans-serif;
+      --ext-sans: 'Instrument Sans', system-ui, sans-serif;
+      --mono:     'JetBrains Mono', 'SF Mono', ui-monospace, monospace;
+      --sh:       0 1px 2px rgba(0,0,0,0.04), 0 0 0 1px rgba(0,0,0,0.05);
+      --sh-up:    0 4px 14px rgba(0,0,0,0.10), 0 0 0 1px rgba(0,0,0,0.05);
+      --sh-hero:  0 40px 120px rgba(0,0,0,0.22), 0 0 0 1px rgba(0,0,0,0.08);
+
+      /* Extension dark theme (used in mockups) */
+      --ext-bg:      #0C0C0B;
+      --ext-card:    #161614;
+      --ext-bar:     #111110;
+      --ext-well:    #1B1B19;
+      --ext-line:    #232321;
+      --ext-line-hi: #2E2D2A;
+      --ext-ink:     #F0EFEC;
+      --ext-ink2:    #8A8986;
+      --ext-ink3:    #4C4B48;
+      --ext-a:       #FF6B3D;
+
+      /* Event type colors (dark mode) */
+      --t-init:   #A78BFA;
+      --t-gate:   #60A5FA;
+      --t-exp:    #34D399;
+      --t-config: #FCD34D;
+      --t-layer:  #A5B4FC;
+      --t-event:  #86EFAC;
+      --t-sdk:    #A1A1AA;
+    }
+
+    /* ── Base ── */
+    body {
+      font-family: var(--body);
+      font-size: 17px;
+      background: var(--bg);
+      color: var(--ink);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      overflow-x: hidden;
+    }
+
+    /* ── Section wrapper ── */
+    .section {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 100px 40px;
+    }
+
+    /* ── Label ── */
+    .label {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--a);
+      margin-bottom: 14px;
+    }
+
+    /* ── Headings ── */
+    h1 {
+      font-family: var(--sans);
+      font-size: clamp(44px, 6vw, 68px);
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      line-height: 1.06;
+      color: var(--ink);
+    }
+    h2 {
+      font-family: var(--sans);
+      font-size: clamp(28px, 3.5vw, 38px);
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      color: var(--ink);
+    }
+
+    .body-text {
+      font-size: 17px;
+      line-height: 1.65;
+      color: var(--ink2);
+      max-width: 440px;
+    }
+
+    /* ── Buttons ── */
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 22px;
+      height: 44px;
+      background: var(--a);
+      color: #fff;
+      border-radius: 7px;
+      font-family: var(--body);
+      font-size: 14px;
+      font-weight: 600;
+      text-decoration: none;
+      letter-spacing: -0.01em;
+      transition: opacity 0.15s ease, transform 0.15s ease;
+    }
+    .btn-primary:hover  { opacity: 0.86; transform: translateY(-1px); }
+    .btn-primary:active { opacity: 1; transform: translateY(0); }
+
+    .btn-ghost {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 20px;
+      height: 44px;
+      color: var(--ink2);
+      border: 1px solid var(--line-hi);
+      border-radius: 7px;
+      font-family: var(--body);
+      font-size: 14px;
+      font-weight: 500;
+      text-decoration: none;
+      letter-spacing: -0.01em;
+      transition: border-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+    }
+    .btn-ghost:hover  { border-color: var(--ink3); color: var(--ink); transform: translateY(-1px); }
+    .btn-ghost:active { transform: translateY(0); }
+
+    .cws-badge, .nav-cws-badge {
+      display: inline-flex;
+      align-items: center;
+      flex-shrink: 0;
+      border-radius: 6px;
+      border: 1px solid rgba(0,0,0,0.09);
+      background: #fff;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.07), 0 3px 8px rgba(0,0,0,0.04);
+      overflow: hidden;
+      transition: box-shadow 0.15s, transform 0.12s, opacity 0.12s;
+    }
+    .cws-badge:hover, .nav-cws-badge:hover {
+      box-shadow: 0 2px 4px rgba(0,0,0,0.08), 0 6px 16px rgba(0,0,0,0.06);
+      transform: translateY(-1px);
+    }
+    .cws-badge:active, .nav-cws-badge:active {
+      box-shadow: 0 1px 1px rgba(0,0,0,0.06), 0 2px 4px rgba(0,0,0,0.03);
+      transform: translateY(0);
+      opacity: 0.92;
+    }
+    .cws-badge img, .nav-cws-badge img { display: block; }
+
+    .rule { border: none; border-top: 1px solid var(--line); margin: 0; }
+
+    /* ════════════════════════════════════════════════
+       SCROLL REVEAL — starts visible by default.
+       JS adds the animation class only after load.
+       prefers-reduced-motion always stays visible.
+    ════════════════════════════════════════════════ */
+    .reveal {
+      transition: opacity 0.55s ease, transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .js-ready .reveal {
+      opacity: 0;
+      transform: translateY(18px);
+    }
+    .js-ready .reveal.visible {
+      opacity: 1;
+      transform: none;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .js-ready .reveal { opacity: 1 !important; transform: none !important; transition: none !important; }
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 800px) {
+      .section { padding: 64px 24px; }
+    }
+
+    /* ════════════════════════════════════════════════
+       NAVBAR
+    ════════════════════════════════════════════════ */
+
+    /* Logo is black SVG — invert when on dark surfaces */
+    .logo-on-dark { filter: brightness(0) invert(1); opacity: 0.9; }
+    .hero-logo { display: block; height: 28px; width: auto; margin-bottom: 8px; }
+
+    /* ════════════════════════════════════════════════
+       HERO
+    ════════════════════════════════════════════════ */
+
+    .hero {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      padding: 112px 0 0;
+      max-width: 1100px;
+      margin: 0 auto;
+      overflow: visible;
+    }
+    .hero-copy {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 22px;
+      max-width: 680px;
+      padding: 0 40px;          /* own padding so text stays inset */
+    }
+
+    /* Hero entrance: JS adds .hero-in to each child in sequence.
+       Elements start hidden; transition fires when class is added.
+       h1 (child 2) stays opacity:1 always for LCP — only transform animates. */
+    .hero-copy > * {
+      opacity: 0;
+      transform: translateY(14px);
+      transition: opacity 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+                  transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    /* all children start at opacity:0 — JS adds .hero-in to fade each in */
+    .hero-copy > *.hero-in    { opacity: 1; transform: none; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .hero-copy > * { opacity: 1 !important; transform: none !important; transition: none !important; }
+      .hero-panel-wrap { opacity: 1 !important; transform: none !important; transition: none !important; }
+    }
+
+    .hero-copy h1 em { font-style: italic; font-weight: 700; }
+    .hero-sub {
+      max-width: 500px;
+      text-align: center;
+      font-size: 18px;
+      line-height: 1.6;
+    }
+    .hero-actions { display: flex; flex-direction: column; gap: 10px; align-items: center; margin-top: 6px; }
+
+    .hero-panel-wrap {
+      /* Full-bleed: align-items:center on .hero + width:100vw naturally positions
+         this element flush to viewport edges (hero is centered, item is viewport-width,
+         so item left-edge = viewport_center − 50vw = 0). No position tricks needed. */
+      width: 100vw;
+      margin-top: 64px;
+      padding: 0 clamp(16px, 4vw, 60px);
+      /* Start hidden so JS transition has something to animate from */
+      opacity: 0;
+      transform: translateY(32px) scale(0.985);
+    }
+
+    /* ════════════════════════════════════════════════
+       BROWSER SHELL
+    ════════════════════════════════════════════════ */
+
+    .browser-shell {
+      width: 100%;
+      max-width: 1200px;
+      margin: 0 auto;
+      border-radius: 10px 10px 0 0;
+      overflow: hidden;
+      box-shadow: var(--sh-hero);
+      background: var(--ext-bg);
+      display: flex;
+      flex-direction: column;
+      height: 504px; /* 44px browser-chrome + 460px panel */
+    }
+    .browser-chrome {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      height: 44px;
+      padding: 0 16px;
+      background: var(--bar);
+      border-bottom: 1px solid var(--line-hi);
+      flex-shrink: 0;
+    }
+    .browser-dots { display: flex; gap: 6px; flex-shrink: 0; }
+    .dot { width: 11px; height: 11px; border-radius: 50%; }
+    .dot-red    { background: #FF5F57; }
+    .dot-yellow { background: #FFBD2E; }
+    .dot-green  { background: #28C840; }
+    /* URL bar: no border, blends into chrome bar, left-aligned */
+    .browser-url {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      height: 26px;
+      padding: 0 8px;
+      background: #D8D7D4;
+      border-radius: 5px;
+      font-family: var(--mono);
+      font-size: 10.5px;
+      color: #4A4946;
+      white-space: nowrap;
+    }
+    .browser-url svg { opacity: 0.6; flex-shrink: 0; }
+    /* DevTools tabs — right side, same row */
+    .devtools-tabs {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      margin-left: auto;
+      font-family: var(--ext-sans);
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--ink2);
+      height: 100%;
+    }
+    .dt-tab {
+      padding: 0 12px;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      cursor: default;
+      position: relative;
+      white-space: nowrap;
+    }
+    .dt-active { color: var(--ink); }
+    .dt-active::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 2px;
+      background: var(--ink2);
+    }
+
+    /* ── Extension panel ── */
+    /* All text inside panel uses Instrument Sans + JetBrains Mono to match real extension */
+    .ext-panel {
+      display: flex;
+      flex-direction: column;
+      height: 460px;
+      background: var(--ext-bg);
+      font-family: var(--ext-sans);
+      font-size: 12px;
+      color: var(--ext-ink);
+    }
+
+    /* Toolbar */
+    .ext-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 14px;
+      height: 44px;
+      background: var(--ext-bar);
+      border-bottom: 1px solid var(--ext-line);
+      flex-shrink: 0;
+    }
+    .filter-tabs {
+      display: flex;
+      background: var(--ext-well);
+      border: 1px solid var(--ext-line);
+      border-radius: 5px;
+      padding: 2px;
+      gap: 1px;
+      flex-shrink: 0;
+    }
+    .filter-tab {
+      padding: 0 9px;
+      height: 22px;
+      border-radius: 3px;
+      border: none;
+      background: transparent;
+      color: var(--ext-ink2);
+      font-size: 11px;
+      font-weight: 500;
+      font-family: var(--ext-sans);
+      cursor: default;
+      line-height: 22px;
+      white-space: nowrap;
+    }
+    .ft-active {
+      background: var(--ext-card);
+      color: var(--ext-ink);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.04);
+    }
+    .search-wrap { position: relative; display: flex; align-items: center; }
+    .ext-search {
+      height: 28px;
+      width: 180px;
+      background: #1C1C1A;
+      border: 1px solid #3D3C39;
+      border-radius: 5px;
+      padding: 0 10px 0 26px;
+      font-family: var(--ext-sans);
+      font-size: 11px;
+      color: var(--ext-ink3);
+      outline: none;
+      cursor: default;
+    }
+    .ext-search::placeholder { color: var(--ext-ink3); }
+    .ext-icon-btn {
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--ext-ink2);
+      border-radius: 5px;
+      cursor: default;
+      flex-shrink: 0;
+    }
+
+    /* Live recording dot */
+    .live-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--ext-a);
+      flex-shrink: 0;
+      animation: live-pulse 2s ease-in-out infinite;
+    }
+    @keyframes live-pulse {
+      0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(255,107,61,0.5); }
+      60%       { opacity: 0.8; box-shadow: 0 0 0 5px rgba(255,107,61,0); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .live-dot { animation: none; }
+    }
+
+    .ext-body { display: flex; flex: 1; overflow: hidden; width: 100%; min-width: 0; }
+
+    /* Event list */
+    .ext-list {
+      width: 300px;
+      flex-shrink: 0;
+      border-right: 1px solid var(--ext-line);
+      overflow-y: auto;
+      background: var(--ext-bg);
+      padding: 8px 0 16px;
+      scrollbar-width: thin;
+      scrollbar-color: var(--ext-line-hi) transparent;
+    }
+    .ext-list::-webkit-scrollbar { width: 4px; }
+    .ext-list::-webkit-scrollbar-track { background: transparent; }
+    .ext-list::-webkit-scrollbar-thumb { background: var(--ext-line-hi); border-radius: 2px; }
+
+    .time-sep {
+      padding: 5px 12px 3px;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--ext-ink3);
+      font-family: var(--ext-sans);
+    }
+
+    /* ── Event cards — matches actual extension ── */
+    .ev-card {
+      background: var(--ext-card);
+      border: 1px solid var(--ext-line);
+      border-left: 2px solid transparent;
+      border-radius: 8px;
+      margin: 6px 10px;
+      padding: 0 10px;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      min-height: 36px;
+      cursor: default;
+      transition: border-color 0.1s, box-shadow 0.1s, transform 0.1s;
+    }
+    /* Multi-row INIT card */
+    .ev-card-multi {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      padding: 0;
+    }
+    .ev-card-multi .ev-card-main {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      padding: 0 10px;
+      min-height: 36px;
+    }
+
+    /* Type-colored left borders */
+    .ev-card[data-type="INIT"],   .ev-card-multi[data-type="INIT"]   { border-left-color: var(--t-init); }
+    .ev-card[data-type="GATE"],   .ev-card-multi[data-type="GATE"]   { border-left-color: var(--t-gate); }
+    .ev-card[data-type="EXP"],    .ev-card-multi[data-type="EXP"]    { border-left-color: var(--t-exp); }
+    .ev-card[data-type="CONFIG"], .ev-card-multi[data-type="CONFIG"] { border-left-color: var(--t-config); }
+    .ev-card[data-type="LAYER"],  .ev-card-multi[data-type="LAYER"]  { border-left-color: var(--t-layer); }
+    .ev-card[data-type="EVENT"],  .ev-card-multi[data-type="EVENT"]  { border-left-color: var(--t-event); }
+    .ev-card[data-type="SDK"],    .ev-card-multi[data-type="SDK"]    { border-left-color: var(--t-sdk); }
+
+    .ev-card.ev-selected, .ev-card-multi.ev-selected {
+      background: rgba(255,107,61,0.05);
+      border-color: rgba(255,107,61,0.28);
+      border-left-color: var(--ext-a) !important;
+      box-shadow: 0 0 0 2px rgba(255,107,61,0.18);
+    }
+    .ev-card.ev-blocked {
+      border-color: rgba(248,113,113,0.25);
+      border-left-color: #F87171 !important;
+    }
+
+    /* Timestamp */
+    .ev-time {
+      font-family: var(--mono);
+      display: inline-flex;
+      align-items: baseline;
+      margin-right: 10px;
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+    .time-hms { font-size: 10.5px; font-weight: 500; color: var(--ext-ink2); }
+    .time-ms  { font-size: 9.5px; color: var(--ext-ink2); opacity: 0.6; }
+
+    /* Event name + preview */
+    .ev-summary {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--ext-ink);
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .ev-name {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      min-width: 0;
+    }
+    .ev-val-preview {
+      color: var(--ext-ink3);
+      font-weight: 400;
+      font-size: 11px;
+      font-family: var(--mono);
+      flex-shrink: 0;
+    }
+
+    /* Badge: dot + label on right */
+    .ev-badge-wrap { margin-left: 10px; flex-shrink: 0; }
+    .ev-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.025em;
+      color: var(--ext-ink2);
+      white-space: nowrap;
+      font-family: var(--ext-sans);
+    }
+    .ev-badge::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .ev-badge-INIT::before   { background: var(--t-init); }
+    .ev-badge-GATE::before   { background: var(--t-gate); }
+    .ev-badge-EXP::before    { background: var(--t-exp); }
+    .ev-badge-CONFIG::before { background: var(--t-config); }
+    .ev-badge-LAYER::before  { background: var(--t-layer); }
+    .ev-badge-EVENT::before  { background: var(--t-event); }
+    .ev-badge-SDK::before    { background: var(--t-sdk); }
+
+    /* Blocked chip */
+    .blocked-chip {
+      display: inline-flex;
+      align-items: center;
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: #F87171;
+      background: rgba(248,113,113,0.1);
+      border: 1px solid rgba(248,113,113,0.28);
+      border-radius: 3px;
+      padding: 1px 5px;
+      line-height: 14px;
+      white-space: nowrap;
+      font-family: var(--ext-sans);
+    }
+
+    /* INIT sub-rows */
+    .ev-sub-rows { border-top: 1px solid var(--ext-line); }
+    .ev-sub-row {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      padding: 4px 10px 4px 14px;
+      gap: 7px;
+      border-bottom: 1px solid rgba(35,35,33,0.6);
+      min-height: 26px;
+      font-family: var(--ext-sans);
+    }
+    .ev-sub-row:last-child { border-bottom: none; }
+    .ev-sub-row.sub-selected { background: rgba(255,107,61,0.07); }
+    .sub-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.025em;
+      color: var(--ext-ink2);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .sub-label::before {
+      content: '';
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .sub-label-GATE::before   { background: var(--t-gate); }
+    .sub-label-EXP::before    { background: var(--t-exp); }
+    .sub-label-CONFIG::before { background: var(--t-config); }
+    .sub-label-LAYER::before  { background: var(--t-layer); }
+    .sub-name {
+      font-size: 11px;
+      color: var(--ext-ink2);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-family: var(--mono);
+    }
+    .sub-val {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--ext-ink3);
+      flex-shrink: 0;
+    }
+    .sub-val-true { color: var(--t-exp); }
+
+    /* ── Grouped event cards ── */
+    .ev-group {
+      border: 1px solid var(--ext-line);
+      border-left: 2px solid transparent;
+      border-radius: 8px;
+      margin: 5px 10px;
+      overflow: hidden;
+      background: var(--ext-card);
+    }
+    .ev-group[data-type="EVENT"] { border-left-color: var(--t-event); }
+    .ev-group[data-type="SDK"]   { border-left-color: var(--t-sdk); }
+    .ev-group[data-type="INIT"]  { border-left-color: var(--t-init); }
+    .ev-group.ev-group-sel {
+      border-color: rgba(255,107,61,0.28);
+      border-left-color: var(--ext-a) !important;
+      box-shadow: 0 0 0 2px rgba(255,107,61,0.18);
+    }
+    .ev-group-head { display:flex; align-items:center; padding:0 10px; min-height:38px; gap:8px; }
+    .ev-group-name { font-size:12px; font-weight:600; color:var(--ext-ink); flex:1; font-family:var(--ext-sans); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .ev-group-count { display:inline-flex; align-items:center; gap:4px; font-size:10px; font-weight:600; color:var(--ext-ink2); white-space:nowrap; font-family:var(--ext-sans); flex-shrink:0; }
+    .ev-group-count::before { content:''; width:6px; height:6px; border-radius:50%; flex-shrink:0; }
+    .ev-gc-EVENT::before { background:var(--t-event); }
+    .ev-gc-SDK::before   { background:var(--t-sdk); }
+    .ev-gc-INIT::before  { background:var(--t-init); }
+    .ev-caret { color:var(--ext-ink3); flex-shrink:0; }
+    .ev-group-sub { border-top:1px solid var(--ext-line); }
+    .ev-group-row { display:flex; align-items:baseline; gap:8px; padding:5px 10px 5px 12px; min-height:26px; border-bottom:1px solid rgba(35,35,33,0.5); cursor:default; }
+    .ev-group-row:last-child { border-bottom:none; }
+    .ev-group-row.gr-sel { background:rgba(255,107,61,0.07); }
+    .gr-time { font-family:var(--mono); white-space:nowrap; flex-shrink:0; }
+    .gr-hms { font-size:10.5px; font-weight:500; color:var(--ext-ink2); }
+    .gr-ms  { font-size:9.5px; color:var(--ext-ink2); opacity:0.6; }
+    .gr-val { font-family:var(--mono); font-size:10.5px; color:var(--ext-ink3); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; flex:1; font-style:italic; }
+
+    /* ── New event enter animation ── */
+    @keyframes ev-enter {
+      from { opacity: 0; transform: translateY(-8px); }
+      to   { opacity: 1; transform: none; }
+    }
+    .ev-new { animation: ev-enter 0.3s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+    /* ── Detail panel ── */
+    .ext-detail {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: var(--ext-bg);
+      border-left: 1px solid var(--ext-line);
+      min-width: 0;
+    }
+    .detail-head {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 14px;
+      height: 44px;
+      background: var(--ext-bar);
+      border-bottom: 1px solid var(--ext-line);
+      flex-shrink: 0;
+    }
+    .detail-hdr-name {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--ext-ink);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      flex: 1;
+      min-width: 0;
+      font-family: var(--ext-sans);
+    }
+    .detail-hdr-time {
+      font-family: var(--mono);
+      font-size: 10px;
+      color: var(--ext-ink2);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .detail-close {
+      width: 22px;
+      height: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--ext-ink3);
+      font-size: 14px;
+      line-height: 1;
+      cursor: default;
+      flex-shrink: 0;
+    }
+    .detail-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px;
+      font-size: 11px;
+      line-height: 1.5;
+      scrollbar-width: thin;
+      scrollbar-color: var(--ext-line-hi) transparent;
+    }
+    .detail-body::-webkit-scrollbar { width: 4px; }
+    .detail-body::-webkit-scrollbar-track { background: transparent; }
+    .detail-body::-webkit-scrollbar-thumb { background: var(--ext-line-hi); border-radius: 2px; }
+
+    /* Section title */
+    .detail-section-title {
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--ext-ink2);
+      margin-top: 10px;
+      margin-bottom: 6px;
+      padding-bottom: 4px;
+      border-bottom: 1px solid var(--ext-line);
+      font-family: var(--ext-sans);
+    }
+    /* KV rows — vertical stack */
+    .kv-row {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+      margin-bottom: 9px;
+    }
+    .kv-key {
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--ext-a);
+      font-family: var(--ext-sans);
+    }
+    .kv-key-dot::after { content:'·'; margin-left:1px; }
+    .kv-val {
+      color: var(--ext-ink);
+      font-family: var(--mono);
+      font-size: 10.5px;
+      word-break: break-all;
+    }
+    .kv-val-true  { color: var(--t-exp); }
+    .kv-val-false { color: #F87171; }
+    .kv-code { background:var(--ext-well); border:1px solid var(--ext-line-hi); border-radius:5px; padding:8px 10px; font-family:var(--mono); font-size:9.5px; color:var(--ext-ink2); line-height:1.5; white-space:pre; overflow-x:auto; margin-top:2px; display:block; }
+
+    /* Detail footer bar */
+    .detail-footer { display:flex; align-items:center; gap:8px; padding:6px 10px; background:var(--ext-bar); border-top:1px solid var(--ext-line); flex-shrink:0; }
+    .detail-copy-btn { display:inline-flex; align-items:center; gap:5px; height:26px; padding:0 10px; background:var(--ext-well); border:1px solid var(--ext-line-hi); border-radius:4px; font-family:var(--ext-sans); font-size:10.5px; font-weight:500; color:var(--ext-ink2); cursor:default; flex-shrink:0; white-space:nowrap; transition:background 0.12s, color 0.12s; }
+    .detail-copy-btn:hover { background:var(--ext-line-hi); color:var(--ext-ink); }
+    .detail-search-wrap { flex:1; position:relative; display:flex; align-items:center; }
+    .detail-search { width:100%; height:26px; background:var(--ext-well); border:1px solid var(--ext-line-hi); border-radius:4px; padding:0 10px 0 26px; font-family:var(--ext-sans); font-size:10.5px; color:var(--ext-ink3); outline:none; }
+    .detail-search::placeholder { color:var(--ext-ink3); }
+
+    /* ════════════════════════════════════════════════
+       FEATURES — single 4-column compact grid
+    ════════════════════════════════════════════════ */
+
+    .features-section { background:var(--card); border-top:1px solid var(--line); border-bottom:1px solid var(--line); position:relative; z-index:1; }
+    .features-inner { max-width:1200px; margin:0 auto; padding:72px clamp(16px,4vw,60px); }
+    .features-grid { display:grid; grid-template-columns:repeat(4,1fr); }
+    .feature-card { display:flex; flex-direction:column; border-right:1px solid var(--line); overflow:hidden; }
+    .feature-card:last-child { border-right:none; }
+    .feature-card-body { padding:20px 20px 24px; display:flex; flex-direction:column; gap:6px; }
+    .feature-label { font-size:10px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:var(--a); }
+    .feature-title { font-family: var(--sans); font-size:15px; font-weight:600; letter-spacing:-0.02em; color:var(--ink); line-height:1.25; margin:0; }
+    .feature-desc { font-size:13.5px; line-height:1.6; color:var(--ink2); margin:0; }
+
+    /* ── Shared illustration container ── */
+    .fc-illo {
+      margin:14px 14px 0; border-radius:8px;
+      border:1px solid #E0DFDC; background:#FFFFFF;
+      box-shadow:0 1px 3px rgba(0,0,0,0.06);
+      overflow:hidden; position:relative;
+      display:flex; flex-direction:column; justify-content:center;
+      padding:0 14px; gap:6px; flex-shrink:0; height:122px;
+    }
+
+    /* ── Classification ── */
+    .fc-illo-classify { gap:5px; }
+    .fcr { display:flex; align-items:center; gap:7px; opacity:0; animation:fcr-row 5s var(--d,0s) infinite both; }
+    .fcr-dot { width:6px; height:6px; border-radius:50%; background:var(--c,#7C3AED); flex-shrink:0; }
+    .fcr-name { font-size:10.5px; font-family:ui-monospace,monospace; color:#6B6A67; flex:1; }
+    .fcr-badge {
+      font-size:9px; font-weight:700; letter-spacing:0.06em; padding:1px 5px; border-radius:3px;
+      background:color-mix(in srgb, var(--c,#7C3AED) 12%, transparent);
+      color:var(--c,#7C3AED);
+      border:1px solid color-mix(in srgb, var(--c,#7C3AED) 25%, transparent);
+    }
+    @keyframes fcr-row {
+      0%   { opacity:0; transform:translateX(-4px); }
+      10%  { opacity:1; transform:translateX(0); }
+      70%  { opacity:1; }
+      85%  { opacity:0; }
+      100% { opacity:0; }
+    }
+
+    /* ── Timeline ── */
+    .fc-illo-timeline { padding:10px 14px; gap:0; justify-content:flex-start; }
+    .fct-group { margin-bottom:5px; }
+    .fct-group-label {
+      font-size:9px; font-weight:600; letter-spacing:0.07em; text-transform:uppercase;
+      color:#AEADA9; display:flex; align-items:center; gap:5px; margin-bottom:4px;
+    }
+    .fct-live-dot { width:5px; height:5px; border-radius:50%; background:#0D9488; animation:fct-pulse 1.8s ease-in-out infinite; }
+    .fct-row {
+      display:flex; align-items:center; gap:6px;
+      font-size:10.5px; font-family:ui-monospace,monospace; color:#6B6A67;
+      border-left:2px solid var(--tc,#2563EB); padding-left:7px; margin-bottom:3px;
+      animation:fct-slide-in 0.3s ease both;
+    }
+    .fct-new { animation:fct-new-row 4s 1.5s infinite both; opacity:0; }
+    @keyframes fct-pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(0.7)} }
+    @keyframes fct-slide-in { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes fct-new-row {
+      0%  { opacity:0; transform:translateY(-8px); }
+      8%  { opacity:1; transform:translateY(0); }
+      72% { opacity:1; }
+      85% { opacity:0; }
+      100%{ opacity:0; }
+    }
+
+    /* ── Reliability ── */
+    .fc-illo-reliability { align-items:flex-start; gap:7px; padding:12px 14px; justify-content:center; }
+    .fcb-card {
+      background:#F4F4F2; border:1px solid #E0DFDC;
+      border-radius:6px; padding:7px 10px; width:100%;
+      display:flex; align-items:center; gap:8px;
+    }
+    .fcb-dot { width:6px; height:6px; border-radius:50%; background:#DC2626; flex-shrink:0; }
+    .fcb-name { font-size:10.5px; font-family:ui-monospace,monospace; color:#6B6A67; flex:1; }
+    .fcb-chip {
+      font-size:9px; font-weight:700; letter-spacing:0.06em; padding:2px 6px; border-radius:3px;
+      background:rgba(220,38,38,0.08); color:#DC2626; border:1px solid rgba(220,38,38,0.28);
+      animation:fcb-glow 2.4s ease-in-out infinite;
+    }
+    .fcb-tooltip {
+      background:rgba(220,38,38,0.06); border:1px solid rgba(220,38,38,0.20); border-radius:5px;
+      padding:6px 9px; width:100%; font-size:10px; line-height:1.45; color:#6B6A67;
+      animation:fcb-tip-in 3s 0.6s infinite both; opacity:0;
+    }
+    .fcb-tooltip strong { color:#DC2626; font-weight:600; }
+    @keyframes fcb-glow { 0%,100%{box-shadow:none} 50%{box-shadow:0 0 6px rgba(220,38,38,0.25)} }
+    @keyframes fcb-tip-in {
+      0%  { opacity:0; transform:translateY(4px); }
+      12% { opacity:1; transform:translateY(0); }
+      72% { opacity:1; }
+      88% { opacity:0; }
+      100%{ opacity:0; }
+    }
+
+    /* ── Workflow ── */
+    .fc-illo-workflow { flex-direction:row; align-items:center; gap:12px; padding:0 14px; }
+    .fck-list { display:flex; flex-direction:column; gap:3px; flex:1; }
+    .fck-row {
+      display:flex; align-items:center; gap:6px; padding:4px 7px; border-radius:4px;
+      font-size:10px; font-family:ui-monospace,monospace; color:#AEADA9;
+      border:1px solid transparent;
+    }
+    .fck-row-dot { width:5px; height:5px; border-radius:50%; background:var(--rc,#2563EB); flex-shrink:0; }
+    .fck-row:nth-child(1) { animation:fck-sel 3.6s 0s infinite; }
+    .fck-row:nth-child(2) { animation:fck-sel 3.6s 1.2s infinite; }
+    .fck-row:nth-child(3) { animation:fck-sel 3.6s 2.4s infinite; }
+    .fck-keys { display:flex; flex-direction:column; gap:6px; align-items:center; flex-shrink:0; }
+    .fck-key {
+      width:22px; height:22px; background:#E5E4E1; border:1px solid #C9C8C4;
+      border-bottom-width:2px; border-radius:4px; display:flex; align-items:center; justify-content:center;
+      font-size:11px; color:#6B6A67;
+    }
+    .fck-key-up   { animation:fck-tap 3.6s 0.4s infinite; }
+    .fck-key-down { animation:fck-tap 3.6s 1.6s infinite; }
+    @keyframes fck-sel {
+      0%,5%    { background:rgba(238,91,42,0.10); border-color:rgba(238,91,42,0.22); color:#1A1917; }
+      28%,100% { background:transparent; border-color:transparent; color:#AEADA9; }
+    }
+    @keyframes fck-tap {
+      0%  { background:#E5E4E1; transform:translateY(0); border-bottom-width:2px; }
+      5%  { background:#D0CFCC; transform:translateY(1px); border-bottom-width:1px; }
+      15% { background:#E5E4E1; transform:translateY(0); border-bottom-width:2px; }
+      100%{ background:#E5E4E1; transform:translateY(0); border-bottom-width:2px; }
+    }
+
+    @media (max-width:800px) {
+      .features-grid { grid-template-columns:1fr 1fr; }
+      .feature-card { border-bottom:1px solid var(--line); }
+      .feature-card:nth-child(2n) { border-right:none; }
+      .feature-card:last-child { border-bottom:none; }
+    }
+    @media (max-width:480px) {
+      .features-grid { grid-template-columns:1fr; }
+      .feature-card { border-right:none; border-bottom:1px solid var(--line); }
+      .feature-card:last-child { border-bottom:none; }
+      .features-inner { padding:48px 20px; }
+    }
+
+    /* ════════════════════════════════════════════════
+       FOOTER
+    ════════════════════════════════════════════════ */
+
+    footer { border-top: 1px solid var(--line); padding: 64px 40px; }
+    .footer-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 24px;
+      text-align: center;
+    }
+    .footer-brand { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+    .footer-tagline { font-size: 14px; color: var(--ink2); letter-spacing: -0.01em; }
+    .footer-links { display: flex; align-items: center; gap: 10px; font-size: 13px; }
+    .footer-links a { color: var(--ink3); text-decoration: none; text-underline-offset: 3px; transition: color 0.15s; }
+    .footer-links a:hover { color: var(--ink); text-decoration: underline; }
+    .footer-dot { color: var(--line-hi); }
+    .footer-fine { font-size: 12px; color: var(--ink3); }
+
+    /* ── Mobile ── */
+    @media (max-width: 600px) {
+      .hero { padding: 80px 24px 0; }
+      .hero-panel-wrap { padding: 0; }
+      .devtools-tabs { font-size: 10.5px; }
+      .dt-tab { padding: 6px 10px; }
+      .ext-search { width: 120px; }
+    }
+
+    /* ── How it works button ── */
+    .btn-how {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 6px 0;
+      border: none;
+      background: transparent;
+      font-family: var(--body);
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--ink3);
+      opacity: 0.85;
+      cursor: pointer;
+      transition: color 0.15s, opacity 0.15s;
+    }
+    .btn-how:hover { color: var(--ink2); opacity: 1; }
+    .btn-how svg { flex-shrink: 0; }
+
+    /* ── Modal ── */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.35);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      z-index: 1000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+    .modal-backdrop.open {
+      opacity: 1;
+      pointer-events: all;
+    }
+    .modal-backdrop.open .modal-card {
+      transform: none;
+      opacity: 1;
+    }
+    .modal-card {
+      background: var(--card);
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      box-shadow: 0 24px 64px rgba(0,0,0,0.18), 0 0 0 1px rgba(0,0,0,0.04);
+      padding: 36px 40px 40px;
+      width: 100%;
+      max-width: 440px;
+      position: relative;
+      transform: translateY(12px) scale(0.98);
+      opacity: 0;
+      transition: transform 0.25s cubic-bezier(0.22,1,0.36,1), opacity 0.2s ease;
+    }
+    .modal-close {
+      position: absolute;
+      top: 16px; right: 16px;
+      width: 28px; height: 28px;
+      border-radius: 6px;
+      border: 1px solid var(--line);
+      background: transparent;
+      color: var(--ink3);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      transition: background 0.12s, color 0.12s;
+    }
+    .modal-close:hover { background: var(--well); color: var(--ink); }
+    .modal-title {
+      font-family: var(--sans);
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--ink);
+      margin-bottom: 28px;
+    }
+    .modal-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      list-style: none;
+      padding: 0;
+    }
+    .modal-step {
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+    }
+    .step-n {
+      flex-shrink: 0;
+      width: 26px; height: 26px;
+      border-radius: 50%;
+      background: var(--well);
+      border: 1px solid var(--line-hi);
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--body);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--ink2);
+      margin-top: 1px;
+    }
+    .step-body {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .step-body strong {
+      font-family: var(--body);
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--ink);
+    }
+    .step-body span {
+      font-family: var(--body);
+      font-size: 13.5px;
+      color: var(--ink2);
+      line-height: 1.5;
+    }
+    .step-body kbd {
+      display: inline-block;
+      padding: 1px 5px;
+      border-radius: 4px;
+      background: var(--well);
+      border: 1px solid var(--line-hi);
+      font-family: var(--mono);
+      font-size: 11px;
+    }
+
+  </style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════ -->
+<!-- HERO                                 -->
+<!-- ════════════════════════════════════ -->
+<section class="hero">
+  <div class="hero-copy">
+    <img src="statsig-extension/icons/logo.svg" alt="SigInspector" class="hero-logo">
+    <h1>
+      <span style="color:var(--a)">Statsig traffic,</span><br>
+      <em>live</em> in DevTools.
+    </h1>
+    <p class="body-text hero-sub">
+      Catch every initialize call, gate check, and custom event as the SDK fires them. Full JSON detail, live.
+    </p>
+    <div class="hero-actions">
+      <a class="cws-badge" href="https://chromewebstore.google.com/detail/penndaemebipmiheebhjbikkohjacein" target="_blank" rel="noopener noreferrer">
+        <img id="cws-badge-hero" src="https://developer.chrome.com/static/docs/webstore/branding/image/YT2Grfi9vEBa2wAPzhWa.png" alt="Available in the Chrome Web Store" width="206" height="58" fetchpriority="low" decoding="async">
+      </a>
+      <button class="btn-how" onclick="document.getElementById('how-modal').classList.add('open')" aria-haspopup="dialog">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+        How it works
+      </button>
+    </div>
+  </div>
+
+  <div class="hero-panel-wrap">
+    <div class="browser-shell">
+
+      <!-- Browser chrome: single row — dots | URL | tabs -->
+      <div class="browser-chrome">
+        <div class="browser-dots">
+          <span class="dot dot-red"></span>
+          <span class="dot dot-yellow"></span>
+          <span class="dot dot-green"></span>
+        </div>
+        <div class="browser-url">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+            <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+          <span>chromewebstore.google.com</span>
+        </div>
+        <div class="devtools-tabs">
+          <span class="dt-tab">Elements</span>
+          <span class="dt-tab">Console</span>
+          <span class="dt-tab">Network</span>
+          <span class="dt-tab dt-active">SigInspector</span>
+        </div>
+      </div>
+
+      <iframe
+        id="demo-iframe"
+        src="statsig-extension/panel-demo.html"
+        style="width:100%;height:100%;border:none;display:block;flex:1;"
+        title="SigInspector Extension Preview"
+      ></iframe>
+
+
+    </div><!-- /browser-shell -->
+  </div><!-- /hero-panel-wrap -->
+</section>
+
+<!-- ════════════════════════════════════ -->
+<!-- FEATURES — 4-column grid             -->
+<!-- ════════════════════════════════════ -->
+<div class="features-section">
+  <div class="features-inner reveal">
+    <div class="features-grid">
+
+      <!-- Card 1: Classification -->
+      <div class="feature-card">
+        <div class="fc-illo fc-illo-classify" aria-hidden="true">
+          <div class="fcr" style="--d:0.0s;--c:#7C3AED"><span class="fcr-dot"></span><span class="fcr-name">initialize</span><span class="fcr-badge">INIT</span></div>
+          <div class="fcr" style="--d:0.4s;--c:#2563EB"><span class="fcr-dot"></span><span class="fcr-name">show_mobile_banner</span><span class="fcr-badge">GATE</span></div>
+          <div class="fcr" style="--d:0.8s;--c:#0D9488"><span class="fcr-dot"></span><span class="fcr-name">homepage_layout</span><span class="fcr-badge">EXP</span></div>
+          <div class="fcr" style="--d:1.2s;--c:#16A34A"><span class="fcr-dot"></span><span class="fcr-name">Home Viewed</span><span class="fcr-badge">EVENT</span></div>
+          <div class="fcr" style="--d:1.6s;--c:#71717A"><span class="fcr-dot"></span><span class="fcr-name">statsig::sdk_init</span><span class="fcr-badge">SDK</span></div>
+        </div>
+        <div class="feature-card-body">
+          <h3 class="feature-title">Every call, tagged</h3>
+          <p class="feature-desc">Gates, experiments, configs, layers, and custom events. 7 types intercepted and classified the moment they fire.</p>
+        </div>
+      </div>
+
+      <!-- Card 2: Timeline -->
+      <div class="feature-card">
+        <div class="fc-illo fc-illo-timeline" aria-hidden="true">
+          <div class="fct-group">
+            <div class="fct-group-label"><span class="fct-live-dot"></span>Latest</div>
+            <div class="fct-row fct-new" style="--tc:#7C3AED">initialize</div>
+            <div class="fct-row" style="--tc:#0D9488">homepage_layout</div>
+          </div>
+          <div class="fct-group">
+            <div class="fct-group-label">3 Mins Ago</div>
+            <div class="fct-row" style="--tc:#2563EB">show_mobile_banner</div>
+            <div class="fct-row" style="--tc:#16A34A">Home Viewed</div>
+          </div>
+        </div>
+        <div class="feature-card-body">
+          <h3 class="feature-title">When it fired matters</h3>
+          <p class="feature-desc">Events group by session time with millisecond precision. Navigate any session without losing your place.</p>
+        </div>
+      </div>
+
+      <!-- Card 3: Reliability -->
+      <div class="feature-card">
+        <div class="fc-illo fc-illo-reliability" aria-hidden="true">
+          <div class="fcb-card">
+            <span class="fcb-dot"></span>
+            <span class="fcb-name">log_event batch</span>
+            <span class="fcb-chip">BLOCKED</span>
+          </div>
+          <div class="fcb-tooltip"><strong>Not sent to Statsig</strong><br>Network error — will retry on next flush</div>
+        </div>
+        <div class="feature-card-body">
+          <h3 class="feature-title">Blocked calls surface</h3>
+          <p class="feature-desc">Failed log_event batches flag instantly. SDK retries are deduplicated. Same batch never appears twice.</p>
+        </div>
+      </div>
+
+      <!-- Card 4: Workflow -->
+      <div class="feature-card">
+        <div class="fc-illo fc-illo-workflow" aria-hidden="true">
+          <div class="fck-list">
+            <div class="fck-row" style="--rc:#7C3AED"><span class="fck-row-dot"></span>initialize</div>
+            <div class="fck-row" style="--rc:#2563EB"><span class="fck-row-dot"></span>show_mobile_banner</div>
+            <div class="fck-row" style="--rc:#16A34A"><span class="fck-row-dot"></span>Home Viewed</div>
+          </div>
+          <div class="fck-keys">
+            <div class="fck-key fck-key-up">↑</div>
+            <div class="fck-key fck-key-down">↓</div>
+          </div>
+        </div>
+        <div class="feature-card-body">
+          <h3 class="feature-title">Keyboard native</h3>
+          <p class="feature-desc">Arrow keys navigate events. Escape closes the detail panel. No mouse required for your debug flow.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════ -->
+<!-- FOOTER                               -->
+<!-- ════════════════════════════════════ -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <img src="statsig-extension/icons/logo.svg" alt="SigInspector" height="20">
+      <span class="footer-tagline">Built for the engineers who ship Statsig.</span>
+    </div>
+    <a class="cws-badge" href="https://chromewebstore.google.com/detail/penndaemebipmiheebhjbikkohjacein" target="_blank" rel="noopener noreferrer">
+      <img src="https://developer.chrome.com/static/docs/webstore/branding/image/YT2Grfi9vEBa2wAPzhWa.png" alt="Available in the Chrome Web Store" width="156" height="44" decoding="async" loading="lazy">
+    </a>
+    <div class="footer-links">
+      <a href="#" target="_blank" rel="noopener noreferrer">GitHub</a>
+      <span class="footer-dot">·</span>
+      <a href="privacy.html">Privacy</a>
+      <span class="footer-dot">·</span>
+      <a href="mailto:hello@applied.llc">hello@applied.llc</a>
+    </div>
+    <p class="footer-fine">Free. No account required. No data leaves your browser.</p>
+  </div>
+</footer>
+
+<script>
+  // ── Page infrastructure ──────────────────────────────────────────────────
+  document.body.classList.add('js-ready');
+
+  // Modal keyboard close
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') document.getElementById('how-modal')?.classList.remove('open');
+  });
+
+  // ── Hero entrance: stagger logo → h1 → copy → panel (JS-driven for reliability) ──
+  (function() {
+    const children = document.querySelectorAll('.hero-copy > *');
+    // delays: logo 80ms, h1 280ms, copy 480ms, badge gated on image load
+    const delays = [80, 280, 480];
+    children.forEach((el, i) => {
+      if (i === 3) return; // badge handled separately
+      const d = delays[i] ?? (80 + i * 200);
+      setTimeout(() => el.classList.add('hero-in'), d);
+    });
+
+    // Panel rises after copy is visible — initial state set in CSS
+    const panel = document.querySelector('.hero-panel-wrap');
+    if (panel) {
+      panel.style.transition = 'opacity 0.85s cubic-bezier(0.22,1,0.36,1), transform 0.85s cubic-bezier(0.22,1,0.36,1)';
+      setTimeout(() => {
+        panel.style.opacity = '1';
+        panel.style.transform = 'none';
+      }, 720);
+    }
+
+    // Badge: show only after image has loaded
+    const badge = document.getElementById('cws-badge-hero');
+    if (!badge) return;
+    const badgeWrap = badge.closest('.hero-copy > *');
+    const showBadge = () => {
+      if (badgeWrap) badgeWrap.classList.add('hero-in');
+    };
+    // Wait for copy to start appearing, then check image
+    setTimeout(() => {
+      if (badge.complete && badge.naturalWidth) showBadge();
+      else badge.addEventListener('load', showBadge);
+      badge.addEventListener('error', showBadge);
+    }, 480);
+  })();
+
+
+  const revealObserver = new IntersectionObserver((entries) => {
+    entries.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('visible'); revealObserver.unobserve(e.target); } });
+  }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
+  document.querySelectorAll('.reveal').forEach((el) => {
+    const r = el.getBoundingClientRect();
+    (r.top < window.innerHeight && r.bottom > 0) ? el.classList.add('visible') : revealObserver.observe(el);
+  });
+
+  // ── Live event simulation ────────────────────────────────────────────────
+  const liveEvents = [
+    { type: 'EVENT', name: 'Item Viewed' },
+    { type: 'EVENT', name: 'Download Clicked' },
+    { type: 'EVENT', name: 'Search Performed' },
+    { type: 'GATE',  name: 'show_install_banner' },
+    { type: 'EVENT', name: 'Extension Installed' },
+    { type: 'EXP',   name: 'search_ranking_v2' },
+  ];
+
+  let liveIdx = 0;
+  const anchor = document.getElementById('live-inject-anchor');
+  if (anchor) {
+    setInterval(() => {
+      const ev = liveEvents[liveIdx % liveEvents.length];
+      liveIdx++;
+      const now = new Date();
+      const hms = now.toTimeString().slice(0, 8);
+      const ms  = String(now.getMilliseconds()).padStart(3, '0').slice(0, 2);
+      const card = document.createElement('div');
+      card.className = `ev-card ev-new`;
+      card.setAttribute('data-type', ev.type);
+      card.style.margin = '6px 10px';
+      card.innerHTML = `
+        <div class="ev-time"><span class="time-hms">${hms}</span><span class="time-ms">.${ms}</span></div>
+        <div class="ev-summary"><span class="ev-name">${ev.name}</span></div>
+        <div class="ev-badge-wrap"><span class="ev-badge ev-badge-${ev.type}">${ev.type}</span></div>
+      `;
+      anchor.parentNode.insertBefore(card, anchor);
+      // Keep list tidy — remove old injected cards beyond 4
+      const injected = anchor.parentNode.querySelectorAll('.ev-new');
+      if (injected.length > 4) injected[injected.length - 1].remove();
+    }, 2200);
+  }
+
+  // ─── Demo event injection ──────────────────────────────────────────────────
+  (function() {
+    const iframe = document.getElementById('demo-iframe');
+    if (!iframe) return;
+    let dripTimers = [];
+    let reloadTimer = null;
+
+    // Anonymized demo events for Chrome Web Store context
+    const demoEvents = [
+      {
+        requestType: 'initialize',
+        url: 'https://featureassets.org/v1/initialize?k=client-demo',
+        timestamp: Date.now() - 8000,
+        events: [{
+          eventName: 'statsig::diagnostics',
+          value: '',
+          metadata: { context: 'initialize', markers: [] },
+          user: { userID: 'user_9af3c821', customIDs: { stableID: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890' } },
+          time: Date.now() - 8000
+        }]
+      },
+      {
+        requestType: 'log_event',
+        url: 'https://prodregistryv2.org/v1/rgstr?k=client-demo',
+        timestamp: Date.now() - 7500,
+        events: [{
+          eventName: 'statsig::session_recording',
+          value: '',
+          metadata: { sessionID: 'sess_7f2a9b4c1e8d3f6a', recordingEnabled: true, samplingRate: 1 },
+          user: { userID: 'user_9af3c821', customIDs: { stableID: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890' } },
+          time: Date.now() - 7500
+        }, {
+          eventName: 'statsig::session_recording',
+          value: '',
+          metadata: { sessionID: 'sess_3c8e1d7b2f5a9c4e', recordingEnabled: true, samplingRate: 1 },
+          user: { userID: 'user_9af3c821', customIDs: { stableID: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890' } },
+          time: Date.now() - 7400
+        }, {
+          eventName: 'statsig::session_recording',
+          value: '',
+          metadata: { sessionID: 'sess_1a4f8b2d9e6c3a7f', recordingEnabled: true, samplingRate: 1 },
+          user: { userID: 'user_9af3c821', customIDs: { stableID: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890' } },
+          time: Date.now() - 7300
+        }]
+      },
+      {
+        requestType: 'log_event',
+        url: 'https://prodregistryv2.org/v1/rgstr?k=client-demo',
+        timestamp: Date.now() - 6000,
+        events: [
+          {
+            eventName: 'Page Viewed',
+            value: 'https://chromewebstore.google.com/',
+            metadata: { page_url: 'https://chromewebstore.google.com/', page_title: 'Chrome Web Store', referrer: '', navigationType: 'navigate' },
+            user: { userID: 'user_9af3c821', customIDs: { stableID: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890' }, custom: { country: 'US', isLoggedIn: true } },
+            time: Date.now() - 6000
+          },
+          {
+            eventName: 'Item Viewed',
+            value: 'siginspector',
+            metadata: { item_id: 'ext_4f8b2d9e', item_name: 'SigInspector - Statsig DevTools', item_category: 'Developer Tools', position: 1, page: 'extension_detail' },
+            user: { userID: 'user_9af3c821', customIDs: { stableID: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890' }, custom: { country: 'US', isLoggedIn: true } },
+            time: Date.now() - 5800
+          }
+        ]
+      },
+      {
+        requestType: 'log_event',
+        url: 'https://prodregistryv2.org/v1/rgstr?k=client-demo',
+        timestamp: Date.now() - 5000,
+        events: [
+          { eventName: 'Widget Impression', value: 'rating_widget', metadata: { widget_id: 'wgt_001', widget_type: 'StarRating', widget_name: 'Extension Rating', rating: 4.8, review_count: 1247, position: 'above_fold', visible: true }, user: { userID: 'user_9af3c821', customIDs: { stableID: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890' } }, time: Date.now() - 5000 },
+          { eventName: 'Widget Impression', value: 'install_button', metadata: { widget_id: 'wgt_002', widget_type: 'InstallButton', widget_name: 'Add to Chrome Button', cta_text: 'Add to Chrome', position: 'hero', visible: true }, user: { userID: 'user_9af3c821', customIDs: { stableID: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890' } }, time: Date.now() - 4900 },
+          { eventName: 'Widget Impression', value: 'screenshot_carousel', metadata: { widget_id: 'wgt_003', widget_type: 'ImageCarousel', widget_name: 'Screenshots', slide_count: 5, auto_play: false }, user: { userID: 'user_9af3c821', customIDs: { stableID: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890' } }, time: Date.now() - 4800 },
+          { eventName: 'Widget Impression', value: 'description_section', metadata: { widget_id: 'wgt_004', widget_type: 'TextSection', widget_name: 'Description', visible: true }, user: { userID: 'user_9af3c821', customIDs: { stableID: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890' } }, time: Date.now() - 4700 },
+          { eventName: 'Widget Impression', value: 'reviews_section', metadata: { widget_id: 'wgt_005', widget_type: 'ReviewsList', widget_name: 'User Reviews', visible: true, count: 24 }, user: { userID: 'user_9af3c821', customIDs: { stableID: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890' } }, time: Date.now() - 4600 },
+          { eventName: 'Widget Impression', value: 'related_extensions', metadata: { widget_id: 'wgt_006', widget_type: 'RelatedGrid', widget_name: 'Related Extensions', count: 6 }, user: { userID: 'user_9af3c821', customIDs: { stableID: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890' } }, time: Date.now() - 4500 },
+          { eventName: 'Widget Impression', value: 'privacy_badge', metadata: { widget_id: 'wgt_007', widget_type: 'PrivacyBadge', widget_name: 'Privacy Practices', verified: true }, user: { userID: 'user_9af3c821', customIDs: { stableID: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890' } }, time: Date.now() - 4400 },
+          { eventName: 'Widget Impression', value: 'support_links', metadata: { widget_id: 'wgt_008', widget_type: 'SupportLinks', widget_name: 'Support & Links', links: ['homepage', 'support', 'privacy'] }, user: { userID: 'user_9af3c821', customIDs: { stableID: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890' } }, time: Date.now() - 4300 },
+          { eventName: 'Widget Impression', value: 'version_info', metadata: { widget_id: 'wgt_009', widget_type: 'VersionInfo', widget_name: 'Version Details', version: '1.2.4', last_updated: '2026-02-14', size: '142KB' }, user: { userID: 'user_9af3c821', customIDs: { stableID: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890' } }, time: Date.now() - 4200 }
+        ]
+      },
+      {
+        requestType: 'log_event',
+        url: 'https://prodregistryv2.org/v1/rgstr?k=client-demo',
+        timestamp: Date.now() - 3000,
+        events: [
+          { eventName: 'Item Seen', value: 'install_button', metadata: { item_id: 'wgt_002', item_type: 'InstallButton', duration_ms: 2400, scroll_depth: 45 }, user: { userID: 'user_9af3c821', customIDs: { stableID: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890' } }, time: Date.now() - 3000 },
+          { eventName: 'Download Clicked', value: 'siginspector', metadata: { item_id: 'ext_4f8b2d9e', item_name: 'SigInspector - Statsig DevTools', cta_text: 'Add to Chrome', position: 'hero', install_source: 'extension_detail_page' }, user: { userID: 'user_9af3c821', customIDs: { stableID: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890' }, custom: { country: 'US', isLoggedIn: true } }, time: Date.now() - 2800 }
+        ]
+      }
+    ];
+
+    function sendBatch(batchEvent) {
+      iframe.contentWindow.postMessage({
+        source: 'siginspector-demo',
+        type: 'statsig_event',
+        event: batchEvent
+      }, '*');
+    }
+
+    const tailEvent = { requestType: 'log_event', url: 'https://prodregistryv2.org/v1/rgstr?k=client-demo', timestamp: Date.now(), events: [{ eventName: 'auto_capture::page_view_end', value: 'https://chromewebstore.google.com/', metadata: { sessionID: 'sess_7f2a9b4c1e8d3f6a', page_url: 'https://chromewebstore.google.com/', lastScrollPercentage: 68, maxScrollPercentage: 72, scrollDepth: 72, pageViewLength: 8420 }, user: { userID: 'user_9af3c821', customIDs: { stableID: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890' } }, time: Date.now() }] };
+
+    function startDemo(drip) {
+      dripTimers.forEach(t => clearTimeout(t));
+      dripTimers = [];
+
+      if (!drip) {
+        // Initial load: show all events at once then drip one more
+        iframe.contentWindow.postMessage({ source: 'siginspector-demo', type: 'buffered_events', events: demoEvents }, '*');
+        setTimeout(() => {
+          iframe.contentWindow.postMessage({ source: 'siginspector-demo', type: 'select_default' }, '*');
+        }, 200);
+        dripTimers.push(setTimeout(() => sendBatch(tailEvent), 3000));
+      } else {
+        // After clear: reset state, then drip each event in one by one
+        iframe.contentWindow.postMessage({ source: 'siginspector-demo', type: 'buffered_events', events: [] }, '*');
+        demoEvents.forEach((event, i) => {
+          dripTimers.push(setTimeout(() => sendBatch(event), (i + 1) * 1500));
+        });
+        dripTimers.push(setTimeout(() => sendBatch(tailEvent), (demoEvents.length + 1) * 1500));
+      }
+    }
+
+    // Wait for iframe to load before sending events
+    iframe.addEventListener('load', () => {
+      setTimeout(() => startDemo(false), 500);
+    });
+
+    // When the panel is cleared, reload the demo after a short pause — drip events in one by one
+    window.addEventListener('message', (e) => {
+      if (e.data?.source === 'siginspector-panel' && e.data?.type === 'cleared') {
+        clearTimeout(reloadTimer);
+        dripTimers.forEach(t => clearTimeout(t));
+        dripTimers = [];
+        reloadTimer = setTimeout(() => startDemo(true), 1500);
+      }
+    });
+  })();
+</script>
+
+<!-- ── How It Works modal ─────────────────────────────── -->
+<div id="how-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-title" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal-card">
+    <button class="modal-close" onclick="document.getElementById('how-modal').classList.remove('open')" aria-label="Close">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+    </button>
+    <h2 id="modal-title" class="modal-title">How it works</h2>
+    <ol class="modal-steps">
+      <li class="modal-step">
+        <span class="step-n">1</span>
+        <div class="step-body">
+          <strong>Install SigInspector</strong>
+          <span>Add it from the Chrome Web Store. No account, no setup.</span>
+        </div>
+      </li>
+      <li class="modal-step">
+        <span class="step-n">2</span>
+        <div class="step-body">
+          <strong>Open DevTools</strong>
+          <span>Press <kbd>F12</kbd> or <kbd>⌘⌥I</kbd> on any page using Statsig.</span>
+        </div>
+      </li>
+      <li class="modal-step">
+        <span class="step-n">3</span>
+        <div class="step-body">
+          <strong>Click the SigInspector tab</strong>
+          <span>Find it in the DevTools panel bar alongside Elements and Console.</span>
+        </div>
+      </li>
+      <li class="modal-step">
+        <span class="step-n">4</span>
+        <div class="step-body">
+          <strong>Navigate and capture</strong>
+          <span>Events appear live as the SDK fires them. Click any row for full JSON detail.</span>
+        </div>
+      </li>
+    </ol>
+  </div>
+</div>
+
+</body>
+</html>

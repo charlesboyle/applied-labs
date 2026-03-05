@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Privacy Policy — SigInspector</title>
+  <meta name="description" content="SigInspector privacy policy. No data is stored, transmitted, or shared.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/png" sizes="16x16" href="statsig-extension/icons/icon16.png">
+  <link rel="icon" type="image/png" sizes="48x48" href="statsig-extension/icons/icon48.png">
+  <link rel="icon" type="image/png" sizes="128x128" href="statsig-extension/icons/icon128.png">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    :root {
+      --bg:      #F4F4F2;
+      --card:    #FFFFFF;
+      --well:    #E5E4E1;
+      --line:    #E0DFDC;
+      --line-hi: #C9C8C4;
+      --ink:     #1A1917;
+      --ink2:    #6B6A67;
+      --ink3:    #AEADA9;
+      --a:       #EE5B2A;
+      --sans:    'Bricolage Grotesque', system-ui, sans-serif;
+      --body:    'Instrument Sans', system-ui, -apple-system, sans-serif;
+      --mono:    'JetBrains Mono', 'SF Mono', ui-monospace, monospace;
+    }
+
+    body {
+      font-family: var(--body);
+      font-size: 16px;
+      background: var(--bg);
+      color: var(--ink);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      overflow-x: hidden;
+    }
+
+    /* ── Top bar ── */
+    .top-bar {
+      border-bottom: 1px solid var(--line);
+      background: var(--card);
+      padding: 0 40px;
+      height: 52px;
+      display: flex;
+      align-items: center;
+    }
+    .top-bar-inner {
+      max-width: 760px;
+      margin: 0 auto;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .top-bar a {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+      color: var(--ink2);
+      font-size: 13px;
+      transition: color 0.15s;
+    }
+    .top-bar a:hover { color: var(--ink); }
+    .top-bar a svg { flex-shrink: 0; }
+
+    /* ── Page layout ── */
+    .page {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 64px 40px 100px;
+    }
+
+    /* ── Header ── */
+    .page-header { margin-bottom: 48px; }
+    .page-header h1 {
+      font-family: var(--sans);
+      font-size: clamp(28px, 4vw, 38px);
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      line-height: 1.1;
+      color: var(--ink);
+      margin-bottom: 10px;
+    }
+    .page-date {
+      font-size: 13px;
+      color: var(--ink3);
+    }
+
+    /* ── Prose ── */
+    .prose { display: flex; flex-direction: column; gap: 40px; }
+
+    .prose-section h2 {
+      font-family: var(--sans);
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      color: var(--ink);
+      margin-bottom: 12px;
+    }
+
+    .prose-section p,
+    .prose-section li {
+      font-size: 15px;
+      line-height: 1.7;
+      color: var(--ink2);
+    }
+
+    .prose-section ul {
+      padding-left: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .prose-section code {
+      font-family: var(--mono);
+      font-size: 12.5px;
+      background: var(--well);
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      padding: 1px 5px;
+      color: var(--ink);
+    }
+
+    .prose-section strong { color: var(--ink); font-weight: 600; }
+
+    .prose-section a {
+      color: var(--a);
+      text-decoration: none;
+      text-underline-offset: 3px;
+    }
+    .prose-section a:hover { text-decoration: underline; }
+
+    hr.prose-divider {
+      border: none;
+      border-top: 1px solid var(--line);
+    }
+
+    /* ── Data table ── */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      font-size: 14px;
+    }
+    .data-table th {
+      background: var(--well);
+      font-weight: 600;
+      font-size: 11px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--ink2);
+      padding: 10px 14px;
+      text-align: left;
+      border-bottom: 1px solid var(--line);
+    }
+    .data-table td {
+      padding: 10px 14px;
+      color: var(--ink2);
+      border-bottom: 1px solid var(--line);
+      vertical-align: middle;
+    }
+    .data-table tr:last-child td { border-bottom: none; }
+    .data-table td:last-child { color: var(--ink); font-weight: 500; }
+    .no-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #6B6A67;
+      background: #F4F4F2;
+      border: 1px solid #E0DFDC;
+      border-radius: 4px;
+      padding: 2px 7px;
+    }
+
+    /* ── Footer ── */
+    footer {
+      border-top: 1px solid var(--line);
+      padding: 40px;
+      text-align: center;
+    }
+    .footer-inner {
+      max-width: 760px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+    .footer-links { display: flex; align-items: center; gap: 10px; font-size: 13px; }
+    .footer-links a { color: var(--ink3); text-decoration: none; text-underline-offset: 3px; transition: color 0.15s; }
+    .footer-links a:hover { color: var(--ink); text-decoration: underline; }
+    .footer-dot { color: var(--line-hi); }
+    .footer-fine { font-size: 12px; color: var(--ink3); }
+
+    @media (max-width: 600px) {
+      .top-bar { padding: 0 20px; }
+      .page { padding: 40px 20px 72px; }
+      footer { padding: 32px 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="top-bar">
+  <div class="top-bar-inner">
+    <a href="index.html">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M19 12H5M12 19l-7-7 7-7"/>
+      </svg>
+      Back to SigInspector
+    </a>
+  </div>
+</div>
+
+<main class="page">
+  <header class="page-header">
+    <h1>Privacy Policy</h1>
+    <p class="page-date">Last updated: February 2026</p>
+  </header>
+
+  <div class="prose">
+
+    <div class="prose-section">
+      <h2>Overview</h2>
+      <p>SigInspector is a Chrome DevTools extension for developers. It intercepts and displays Statsig SDK network traffic (feature gate evaluations, experiment exposures, and custom events) directly inside the Chrome DevTools panel of the tab being inspected.</p>
+      <p style="margin-top:10px">This policy describes how SigInspector handles data encountered during its operation.</p>
+    </div>
+
+    <hr class="prose-divider">
+
+    <div class="prose-section">
+      <h2>What SigInspector Does</h2>
+      <p>SigInspector injects a content script into web pages to intercept outbound network calls made by the Statsig JavaScript SDK — specifically requests to known Statsig API endpoints (e.g. <code>statsigapi.net</code>, <code>featuregates.org</code>). The request and response payloads are decoded and displayed in the SigInspector DevTools panel.</p>
+      <p style="margin-top:10px">This interception is intentional and controlled by the developer: the extension only activates when the SigInspector panel is open in Chrome DevTools for that specific tab.</p>
+    </div>
+
+    <hr class="prose-divider">
+
+    <div class="prose-section">
+      <h2>Data Accessed</h2>
+      <p>SigInspector reads the content of Statsig SDK API requests and responses. These payloads may include:</p>
+      <ul style="margin-top:12px">
+        <li>Feature gate names and evaluation results</li>
+        <li>Experiment names and assigned groups</li>
+        <li>Custom event names and values</li>
+        <li>Statsig user context fields set by the developer's application (e.g. <code>userID</code>, <code>email</code>, <code>customIDs</code>)</li>
+      </ul>
+      <p style="margin-top:12px">This data is accessed <strong>solely to display it to the developer</strong> who is actively using the DevTools panel.</p>
+    </div>
+
+    <hr class="prose-divider">
+
+    <div class="prose-section">
+      <h2>Data Handling</h2>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Practice</th>
+            <th>SigInspector</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Data stored on device</td><td><span class="no-chip">No</span></td></tr>
+          <tr><td>Data transmitted to any server</td><td><span class="no-chip">No</span></td></tr>
+          <tr><td>Data shared with third parties</td><td><span class="no-chip">No</span></td></tr>
+          <tr><td>Data used for analytics or profiling</td><td><span class="no-chip">No</span></td></tr>
+          <tr><td>Data retained after panel is closed</td><td><span class="no-chip">No</span></td></tr>
+        </tbody>
+      </table>
+      <p style="margin-top:14px">All data accessed by SigInspector exists exclusively in the browser's memory for the duration of the active DevTools session. It is never written to disk, never sent to any external server (including any server operated by the extension author), and is discarded when the DevTools panel is closed or the tab is navigated.</p>
+    </div>
+
+    <hr class="prose-divider">
+
+    <div class="prose-section">
+      <h2>Permissions</h2>
+      <p>SigInspector requests the <code>&lt;all_urls&gt;</code> host permission. This is required because Statsig-instrumented pages can be on any domain, and the content script must be injected before the page loads (<code>document_start</code>) to intercept SDK calls reliably. The extension does not use this permission to access, read, or monitor any content outside of Statsig SDK API traffic.</p>
+    </div>
+
+    <hr class="prose-divider">
+
+    <div class="prose-section">
+      <h2>No Remote Code</h2>
+      <p>SigInspector does not load or execute any remote code. All extension logic is bundled within the extension package.</p>
+    </div>
+
+    <hr class="prose-divider">
+
+    <div class="prose-section">
+      <h2>Children's Privacy</h2>
+      <p>SigInspector is a developer tool intended for use by software developers. It is not directed at children and does not knowingly interact with data from users under the age of 13.</p>
+    </div>
+
+    <hr class="prose-divider">
+
+    <div class="prose-section">
+      <h2>Changes to This Policy</h2>
+      <p>If this policy changes, the updated version will be committed to this repository with a revised "Last updated" date above.</p>
+    </div>
+
+    <hr class="prose-divider">
+
+    <div class="prose-section">
+      <h2>Contact</h2>
+      <p>Questions about this privacy policy can be directed to: <a href="mailto:hello@applied.llc">hello@applied.llc</a></p>
+    </div>
+
+  </div>
+</main>
+
+<footer>
+  <div class="footer-inner">
+    <div class="footer-links">
+      <a href="#" target="_blank" rel="noopener noreferrer">GitHub</a>
+      <span class="footer-dot">·</span>
+      <a href="privacy.html">Privacy</a>
+      <span class="footer-dot">·</span>
+      <a href="mailto:hello@applied.llc">hello@applied.llc</a>
+    </div>
+    <p class="footer-fine">Free. No account required. No data leaves your browser.</p>
+  </div>
+</footer>
+
+</body>
+</html>
