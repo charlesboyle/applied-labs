@@ -1,5 +1,5 @@
 // Demo mode — no Chrome APIs required
-document.documentElement.dataset.theme = 'dark';
+document.documentElement.dataset.theme = 'light';
 (function () {
 'use strict';
 
