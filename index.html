@@ -346,32 +346,6 @@
       }
     }
 
-    /* ── OG preview ──────────────────────────────────────────── */
-    .og-preview {
-      position: fixed;
-      pointer-events: none;
-      z-index: 8000;
-      width: 300px;
-      border-radius: 10px;
-      overflow: hidden;
-      box-shadow: 0 24px 64px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.07);
-      opacity: 0;
-      transform: scale(0.94) translateY(6px);
-      transition: opacity 0.18s ease, transform 0.22s var(--ease-out);
-      will-change: left, top, opacity, transform;
-    }
-
-    .og-preview.visible {
-      opacity: 1;
-      transform: scale(1) translateY(0);
-    }
-
-    .og-preview img {
-      display: block;
-      width: 100%;
-      height: auto;
-    }
-
     /* ── Responsive ──────────────────────────────────────────── */
     @media (max-width: 600px) {
       .container { padding: 0 20px; }
@@ -405,11 +379,6 @@
   <div class="cursor-ring" id="cursorRing"></div>
   <div class="cursor-dot" id="cursorDot"></div>
 
-  <!-- OG image preview -->
-  <div class="og-preview" id="ogPreview">
-    <img id="ogPreviewImg" src="" alt="">
-  </div>
-
   <div class="container">
     <header>
       <div class="wordmark">Applied Labs</div>
@@ -419,7 +388,7 @@
     <main class="projects">
       <div class="project-list" id="projectList">
 
-        <a class="project-row" href="/siginspector" target="_blank" rel="noopener" data-delay="0" data-og="https://kzdhwwwqqtrstswsywrr.supabase.co/storage/v1/object/public/media/siginspector/og-siginspector.png">
+        <a class="project-row" href="/siginspector" target="_blank" rel="noopener" data-delay="0">
           <div class="row-body">
             <span class="project-name">SigInspector</span>
             <p class="project-desc">Chrome extension to monitor Statsig SDK events in real time</p>
@@ -508,42 +477,10 @@
       requestAnimationFrame(lerpRing);
     })();
 
-    // ── OG preview ────────────────────────────────────────────
-    const ogPreview = document.getElementById('ogPreview');
-    const ogImg     = document.getElementById('ogPreviewImg');
-    const OFFSET_X  = 24;
-    const OFFSET_Y  = -20;
-
-    function positionPreview() {
-      const pw = ogPreview.offsetWidth  || 300;
-      const ph = ogPreview.offsetHeight || 160;
-      let x = mx + OFFSET_X;
-      let y = my + OFFSET_Y;
-      if (x + pw > window.innerWidth  - 12) x = mx - pw - OFFSET_X;
-      if (y + ph > window.innerHeight - 12) y = window.innerHeight - ph - 12;
-      if (y < 12) y = 12;
-      ogPreview.style.left = x + 'px';
-      ogPreview.style.top  = y + 'px';
-    }
-
     rows.forEach(row => {
-      row.addEventListener('mouseenter', () => {
-        ring.classList.add('hovering');
-        const og = row.dataset.og;
-        if (og) {
-          ogImg.src = og;
-          positionPreview();
-          ogPreview.classList.add('visible');
-        }
-      });
-      row.addEventListener('mouseleave', () => {
-        ring.classList.remove('hovering');
-        ogPreview.classList.remove('visible');
-      });
+      row.addEventListener('mouseenter', () => ring.classList.add('hovering'));
+      row.addEventListener('mouseleave', () => ring.classList.remove('hovering'));
     });
-
-    // Update preview position on every mousemove
-    document.addEventListener('mousemove', positionPreview);
 
     document.addEventListener('mouseleave', () => {
       ring.style.opacity = '0';
