@@ -940,14 +940,10 @@
 
     @media (max-width:800px) {
       .features-grid { grid-template-columns:1fr 1fr; }
-      .feature-card { border-bottom:1px solid var(--line); }
-      .feature-card:nth-child(2n) { border-right:none; }
-      .feature-card:last-child { border-bottom:none; }
+      .feature-card { border-right:none; border-bottom:none; }
     }
     @media (max-width:480px) {
       .features-grid { grid-template-columns:1fr; }
-      .feature-card { border-right:none; border-bottom:1px solid var(--line); }
-      .feature-card:last-child { border-bottom:none; }
       .features-inner { padding:48px 20px; }
     }
 
@@ -955,7 +951,7 @@
        FOOTER
     ════════════════════════════════════════════════ */
 
-    footer { border-top: 1px solid var(--line); padding: 64px 40px; }
+    footer { border-top: 1px solid var(--line); padding: 64px 80px; }
     .footer-inner {
       max-width: 1100px;
       margin: 0 auto;
@@ -975,10 +971,11 @@
 
     /* ── Mobile ── */
     @media (max-width: 600px) {
-      .hero { padding: 80px 24px 0; }
-      .hero-panel-wrap { padding: 0; }
-      .devtools-tabs { font-size: 10.5px; }
+      .hero { padding: 80px 0 0; }
+      .hero-panel-wrap { padding: 0 16px; }
+      .devtools-tabs { font-size: 10.5px; overflow: hidden; }
       .dt-tab { padding: 6px 10px; }
+      .dt-tab:not(.dt-active) { opacity: 0.3; padding: 6px 7px; }
       .ext-search { width: 120px; }
     }
 
@@ -1263,19 +1260,16 @@
   <div class="footer-inner">
     <div class="footer-brand">
       <img src="statsig-extension/icons/logo.svg" alt="SigInspector" height="20">
-      <span class="footer-tagline">Built for the engineers who ship Statsig.</span>
+      <span class="footer-tagline">Built for product people who ship with Statsig</span>
     </div>
     <a class="cws-badge" href="https://chromewebstore.google.com/detail/penndaemebipmiheebhjbikkohjacein" target="_blank" rel="noopener noreferrer">
       <img src="https://developer.chrome.com/static/docs/webstore/branding/image/YT2Grfi9vEBa2wAPzhWa.png" alt="Available in the Chrome Web Store" width="156" height="44" decoding="async" loading="lazy">
     </a>
     <div class="footer-links">
-      <a href="#" target="_blank" rel="noopener noreferrer">GitHub</a>
-      <span class="footer-dot">·</span>
       <a href="privacy.html">Privacy</a>
       <span class="footer-dot">·</span>
       <a href="mailto:hello@applied.llc">hello@applied.llc</a>
     </div>
-    <p class="footer-fine">Free. No account required. No data leaves your browser.</p>
   </div>
 </footer>
 
@@ -1478,9 +1472,11 @@
       if (!drip) {
         // Initial load: show all events at once then drip one more
         iframe.contentWindow.postMessage({ source: 'siginspector-demo', type: 'buffered_events', events: demoEvents }, '*');
-        setTimeout(() => {
-          iframe.contentWindow.postMessage({ source: 'siginspector-demo', type: 'select_default' }, '*');
-        }, 200);
+        if (window.innerWidth > 600) {
+          setTimeout(() => {
+            iframe.contentWindow.postMessage({ source: 'siginspector-demo', type: 'select_default' }, '*');
+          }, 200);
+        }
         dripTimers.push(setTimeout(() => sendBatch(tailEvent), 3000));
       } else {
         // After clear: reset state, then drip each event in one by one

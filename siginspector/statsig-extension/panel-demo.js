@@ -1,5 +1,5 @@
 // Demo mode — no Chrome APIs required
-document.documentElement.dataset.theme = 'light';
+document.documentElement.dataset.theme = 'dark';
 (function () {
 'use strict';
 
@@ -1201,7 +1201,7 @@ resizeHandle.addEventListener('dblclick', () => {
 });
 
 // ─── Theme management ─────────────────────────────────────────────────────
-let themePref = localStorage.getItem('statsig-theme') || 'auto';
+let themePref = localStorage.getItem('statsig-theme') || 'light';
 
 function isDarkEffective() {
   if (themePref === 'dark') return true;
