@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SigInspector / Applied Labs</title>
+  <meta name="description" content="Chrome DevTools extension to monitor Statsig SDK events in real time." />
+  <link rel="icon" type="image/png" sizes="32x32" href="https://kzdhwwwqqtrstswsywrr.supabase.co/storage/v1/object/public/media/applied/applied-32.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="case.css" />
+  <style>
+    :root {
+      --ext-bg:   #0C0C0B;
+      --ext-card: #161614;
+      --ext-bar:  #111110;
+      --ext-line: #232321;
+      --ext-ink:  #F0EFEC;
+      --ext-ink2: #8A8986;
+      --ext-ink3: #4C4B48;
+      --ext-a:    #FF6B3D;
+    }
+    .case-visual { background: var(--ext-bg); }
+    .ext-toolbar { display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; background: var(--ext-bar); border-bottom: 1px solid var(--ext-line); }
+    .live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ext-a); flex-shrink: 0; animation: live-pulse 2s ease-in-out infinite; }
+    @keyframes live-pulse { 0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(255,107,61,.5);}60%{opacity:.8;box-shadow:0 0 0 5px rgba(255,107,61,0);} }
+    .live-label { font-size: 10px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--ext-a); font-family: "JetBrains Mono", monospace; }
+    .filter-pill-group { display: flex; background: rgba(255,255,255,.04); border: 1px solid var(--ext-line); border-radius: 4px; padding: 2px; gap: 1px; margin-left: auto; }
+    .filter-pill { padding: 0 8px; height: 20px; border-radius: 2px; font-size: 10px; font-weight: 500; color: var(--ext-ink3); font-family: "JetBrains Mono", monospace; line-height: 20px; }
+    .fp-active { background: var(--ext-card); color: var(--ext-ink); box-shadow: 0 1px 2px rgba(0,0,0,.4); }
+    .ext-event-list { padding: 10px 12px; display: flex; flex-direction: column; gap: 5px; min-height: 180px; }
+    .ev-row { display: grid; grid-template-columns: 80px 1fr auto; align-items: center; gap: 10px; background: var(--ext-card); border: 1px solid var(--ext-line); border-left: 2px solid var(--ev-color,#A78BFA); border-radius: 6px; padding: 0 10px; height: 34px; opacity: 0; transform: translateY(-6px); }
+    .ev-row.ev-in { animation: ev-arrive .35s var(--ease-out) var(--ev-delay,0s) forwards; }
+    @keyframes ev-arrive { to { opacity: 1; transform: none; } }
+    .ev-ts { font-family: "JetBrains Mono", monospace; font-size: 9.5px; color: var(--ext-ink2); white-space: nowrap; }
+    .ev-name { font-family: "JetBrains Mono", monospace; font-size: 11px; color: var(--ext-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .ev-badge { display: inline-flex; align-items: center; font-size: 9px; font-weight: 700; letter-spacing: .05em; color: var(--ev-color,#A78BFA); background: color-mix(in srgb, var(--ev-color,#A78BFA) 10%, transparent); border: 1px solid color-mix(in srgb, var(--ev-color,#A78BFA) 25%, transparent); border-radius: 3px; padding: 1px 5px; white-space: nowrap; font-family: "JetBrains Mono", monospace; }
+  </style>
+</head>
+<body>
+
+<svg class="grain" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="100%" height="100%">
+  <filter id="g"><feTurbulence type="fractalNoise" baseFrequency="0.72" numOctaves="4" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/></filter>
+  <rect width="100%" height="100%" filter="url(#g)"/>
+</svg>
+<div class="cursor-ring" id="cursorRing"></div>
+<div class="cursor-dot" id="cursorDot"></div>
+
+<div class="container">
+
+  <nav class="case-nav" aria-label="Breadcrumb">
+    <a class="bc-home" href="/">Applied Labs /</a>
+    <span class="bc-current">SigInspector</span>
+  </nav>
+
+  <header class="case-header">
+    <div class="case-meta">
+      <span class="meta-tag">Chrome Extension</span>
+      <span class="meta-sep">·</span>
+      <span class="meta-tag">2024</span>
+      <span class="meta-sep">·</span>
+      <span class="meta-tag meta-live">Live</span>
+    </div>
+    <h1 class="case-title">SigInspector</h1>
+    <p class="case-tagline">Statsig SDK traffic, live in DevTools. Every call intercepted, classified, and inspectable.</p>
+  </header>
+
+  <div class="case-visual" id="caseVisual">
+    <div class="ext-toolbar">
+      <div class="live-dot"></div>
+      <span class="live-label">Recording</span>
+      <div class="filter-pill-group">
+        <span class="filter-pill fp-active">All</span>
+        <span class="filter-pill">Gates</span>
+        <span class="filter-pill">Experiments</span>
+        <span class="filter-pill">Events</span>
+      </div>
+    </div>
+    <div class="ext-event-list">
+      <div class="ev-row" style="--ev-color:#A78BFA;--ev-delay:0.3s"><span class="ev-ts">09:41:22.104</span><span class="ev-name">initialize</span><span class="ev-badge">INIT</span></div>
+      <div class="ev-row" style="--ev-color:#60A5FA;--ev-delay:0.55s"><span class="ev-ts">09:41:22.381</span><span class="ev-name">show_mobile_banner</span><span class="ev-badge">GATE</span></div>
+      <div class="ev-row" style="--ev-color:#34D399;--ev-delay:0.78s"><span class="ev-ts">09:41:22.502</span><span class="ev-name">homepage_layout_v2</span><span class="ev-badge">EXP</span></div>
+      <div class="ev-row" style="--ev-color:#FCD34D;--ev-delay:1.0s"><span class="ev-ts">09:41:22.614</span><span class="ev-name">feature_flags</span><span class="ev-badge">CONFIG</span></div>
+      <div class="ev-row" style="--ev-color:#86EFAC;--ev-delay:1.22s"><span class="ev-ts">09:41:23.090</span><span class="ev-name">Home Viewed</span><span class="ev-badge">EVENT</span></div>
+    </div>
+  </div>
+
+  <section class="case-section" data-reveal>
+    <div class="section-label-row"><span class="section-label">problem</span><div class="section-line"></div></div>
+    <p class="case-prose">Statsig's SDK fires dozens of intercepts per page load. Debugging means digging through the Network tab waterfall, copying JSON blobs, and manually mapping call types to their source. There was no tool that surfaced SDK events where developers already work.</p>
+  </section>
+
+  <section class="case-section" data-reveal>
+    <div class="section-label-row"><span class="section-label">what we built</span><div class="section-line"></div></div>
+    <div class="capabilities">
+      <div class="cap-item">
+        <span class="cap-num">01</span>
+        <div><div class="cap-title">Real-time interception</div><p class="cap-desc">All 7 Statsig call types — INIT, GATE, EXP, CONFIG, LAYER, EVENT, SDK — caught the moment they fire. Timestamps to the millisecond, full JSON payload on click.</p></div>
+      </div>
+      <div class="cap-item">
+        <span class="cap-num">02</span>
+        <div><div class="cap-title">Dedicated DevTools panel</div><p class="cap-desc">A first-class tab alongside Elements, Console, and Network. Filter by type, search by name, inspect payloads inline.</p></div>
+      </div>
+      <div class="cap-item">
+        <span class="cap-num">03</span>
+        <div><div class="cap-title">Zero overhead</div><p class="cap-desc">Manifest V3, no external dependencies, no network calls. Content scripts intercept SDK calls without touching page performance.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="case-section" data-reveal>
+    <div class="section-label-row"><span class="section-label">screens</span><div class="section-line"></div></div>
+    <div class="gallery-grid">
+      <figure class="gallery-item">
+        <img src="../screenshots/project-sig-1.png" alt="SigInspector landing page" loading="lazy" />
+      </figure>
+      <figure class="gallery-item">
+        <img src="../screenshots/project-sig-2.png" alt="SigInspector feature cards" loading="lazy" />
+      </figure>
+    </div>
+  </section>
+
+  <div class="case-cta" id="caseCta">
+    <div class="cta-text">
+      <span class="cta-eyebrow">Available now · Free</span>
+      <div class="cta-heading">Get SigInspector</div>
+      <p class="cta-sub">Published on the Chrome Web Store</p>
+    </div>
+    <a class="cta-btn" href="https://chromewebstore.google.com/detail/penndaemebipmiheebhjbikkohjacein" target="_blank" rel="noopener">Add to Chrome <span class="arrow-circ"><svg viewBox="0 0 24 24"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg></span></a>
+  </div>
+
+  <footer class="case-footer">
+    <div class="footer-wordmark">Applied<br>Labs</div>
+    <a class="footer-next" href="/projects/happening.html">
+      <span class="footer-next-label">Next project</span>
+      <span class="footer-next-name">Happening <span class="arrow-circ"><svg viewBox="0 0 24 24"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg></span></span>
+    </a>
+  </footer>
+
+</div>
+
+<script>window.onVisualReveal = () => document.querySelectorAll('.ev-row').forEach(c => c.classList.add('ev-in'));</script>
+<script src="case.js"></script>
+</body>
+</html>

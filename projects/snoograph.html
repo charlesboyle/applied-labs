@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Snoograph / Applied Labs</title>
+  <meta name="description" content="Reddit sentiment heatmaps. See how communities actually feel." />
+  <link rel="icon" type="image/png" sizes="32x32" href="https://kzdhwwwqqtrstswsywrr.supabase.co/storage/v1/object/public/media/applied/applied-32.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="case.css" />
+  <style>
+    :root {
+      --sn-bg:   #0d0f14;
+      --sn-card: #131720;
+      --sn-line: #1e2330;
+      --sn-ink:  #c8d4e8;
+      --sn-ink2: #5c6880;
+    }
+    .case-visual { background: var(--sn-bg); }
+    .sn-header { display: flex; align-items: center; gap: 10px; padding: 10px 16px; background: #0a0c11; border-bottom: 1px solid var(--sn-line); }
+    .sn-logo { font-family: "Syne", sans-serif; font-size: 13px; font-weight: 800; color: #7c9ef5; letter-spacing: .02em; }
+    .sn-sub { font-size: 10px; color: var(--sn-ink2); font-family: "JetBrains Mono", monospace; }
+    .sn-period { margin-left: auto; font-size: 9px; color: var(--sn-ink2); font-family: "JetBrains Mono", monospace; background: rgba(124,158,245,.06); border: 1px solid rgba(124,158,245,.12); border-radius: 3px; padding: 2px 7px; }
+    .sn-body { display: flex; }
+    .sn-subs { width: 130px; flex-shrink: 0; border-right: 1px solid var(--sn-line); padding: 10px 0; }
+    .sn-sub-row { display: flex; align-items: center; gap: 6px; padding: 5px 12px; font-size: 10px; color: var(--sn-ink2); font-family: "JetBrains Mono", monospace; }
+    .sn-sub-row.active { background: rgba(124,158,245,.06); color: var(--sn-ink); }
+    .sn-sub-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--sn-line); flex-shrink: 0; }
+    .sn-sub-row.active .sn-sub-dot { background: #7c9ef5; }
+    .sn-heatmap { flex: 1; padding: 12px 14px; overflow: hidden; }
+    .sn-hm-label { display: flex; align-items: center; gap: 8px; font-size: 9px; letter-spacing: .1em; text-transform: uppercase; color: var(--sn-ink2); margin-bottom: 10px; font-family: "JetBrains Mono", monospace; }
+    .sn-days { display: flex; gap: 2px; margin-bottom: 2px; }
+    .sn-day { flex: 1; text-align: center; font-size: 8px; color: var(--sn-ink2); font-family: "JetBrains Mono", monospace; }
+    .sn-grid { display: flex; flex-direction: column; gap: 2px; }
+    .sn-row { display: flex; gap: 2px; align-items: center; }
+    .sn-row-label { width: 24px; font-size: 8px; color: var(--sn-ink2); flex-shrink: 0; font-family: "JetBrains Mono", monospace; }
+    .sn-cells { display: flex; gap: 2px; flex: 1; }
+    .sn-cell { flex: 1; aspect-ratio: 1; border-radius: 2px; background: var(--cell-color,#1e2330); opacity: 0; transform: scale(.6); }
+    .sn-cell.sc-in { animation: sc-appear .3s var(--ease-out) var(--sc-delay,0s) forwards; }
+    @keyframes sc-appear { to { opacity: 1; transform: none; } }
+    .sn-legend { display: flex; align-items: center; gap: 6px; padding: 8px 14px; border-top: 1px solid var(--sn-line); }
+    .sn-leg-label { font-size: 9px; color: var(--sn-ink2); font-family: "JetBrains Mono", monospace; }
+    .sn-leg-scale { display: flex; gap: 2px; }
+    .sn-leg-cell { width: 14px; height: 10px; border-radius: 1px; }
+    @media (max-width: 600px) { .sn-subs { display: none; } }
+  </style>
+</head>
+<body>
+
+<svg class="grain" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="100%" height="100%">
+  <filter id="g"><feTurbulence type="fractalNoise" baseFrequency="0.72" numOctaves="4" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/></filter>
+  <rect width="100%" height="100%" filter="url(#g)"/>
+</svg>
+<div class="cursor-ring" id="cursorRing"></div>
+<div class="cursor-dot" id="cursorDot"></div>
+
+<div class="container">
+
+  <nav class="case-nav" aria-label="Breadcrumb">
+    <a class="bc-home" href="/">Applied Labs /</a>
+    <span class="bc-current">Snoograph</span>
+  </nav>
+
+  <header class="case-header">
+    <div class="case-meta">
+      <span class="meta-tag">Data Viz</span>
+      <span class="meta-sep">·</span>
+      <span class="meta-tag">Reddit</span>
+      <span class="meta-sep">·</span>
+      <span class="meta-tag meta-live">Live</span>
+    </div>
+    <h1 class="case-title">Snoograph</h1>
+    <p class="case-tagline">Reddit sentiment as heatmaps. Stop reading anecdotes — see how a community actually feels.</p>
+  </header>
+
+  <div class="case-visual" id="caseVisual">
+    <div class="sn-header">
+      <span class="sn-logo">Snoograph</span>
+      <span class="sn-sub">r/technology</span>
+      <span class="sn-period">Last 90 days</span>
+    </div>
+    <div class="sn-body">
+      <div class="sn-subs">
+        <div class="sn-sub-row active"><span class="sn-sub-dot"></span>r/technology</div>
+        <div class="sn-sub-row"><span class="sn-sub-dot"></span>r/apple</div>
+        <div class="sn-sub-row"><span class="sn-sub-dot"></span>r/programming</div>
+        <div class="sn-sub-row"><span class="sn-sub-dot"></span>r/worldnews</div>
+        <div class="sn-sub-row"><span class="sn-sub-dot"></span>r/science</div>
+      </div>
+      <div class="sn-heatmap">
+        <div class="sn-hm-label">Sentiment · Post Activity</div>
+        <div class="sn-days"><div class="sn-day">Mon</div><div class="sn-day">Tue</div><div class="sn-day">Wed</div><div class="sn-day">Thu</div><div class="sn-day">Fri</div><div class="sn-day">Sat</div><div class="sn-day">Sun</div></div>
+        <div class="sn-grid" id="heatmapGrid"></div>
+      </div>
+    </div>
+    <div class="sn-legend">
+      <span class="sn-leg-label">Negative</span>
+      <div class="sn-leg-scale">
+        <div class="sn-leg-cell" style="background:#1e2330"></div>
+        <div class="sn-leg-cell" style="background:#2a3a5c"></div>
+        <div class="sn-leg-cell" style="background:#3b5998"></div>
+        <div class="sn-leg-cell" style="background:#4f7ec4"></div>
+        <div class="sn-leg-cell" style="background:#7c9ef5"></div>
+        <div class="sn-leg-cell" style="background:#a5c4ff"></div>
+        <div class="sn-leg-cell" style="background:#c8d4e8"></div>
+      </div>
+      <span class="sn-leg-label">Positive</span>
+    </div>
+  </div>
+
+  <section class="case-section" data-reveal>
+    <div class="section-label-row"><span class="section-label">problem</span><div class="section-line"></div></div>
+    <p class="case-prose">Reddit sentiment gets discussed in anecdotes — "this sub has gone downhill", "people seemed positive about X last month". There was no way to actually see community sentiment over time. Qualitative vibes, zero quantitative view.</p>
+  </section>
+
+  <section class="case-section" data-reveal>
+    <div class="section-label-row"><span class="section-label">what we built</span><div class="section-line"></div></div>
+    <div class="capabilities">
+      <div class="cap-item"><span class="cap-num">01</span><div><div class="cap-title">Sentiment pipeline</div><p class="cap-desc">Fetches posts and top comments from any subreddit. Runs each through NLP sentiment scoring. Aggregates by day and week into a normalized score from negative to positive.</p></div></div>
+      <div class="cap-item"><span class="cap-num">02</span><div><div class="cap-title">Heatmap visualization</div><p class="cap-desc">Sentiment rendered as a calendar heatmap — same format as GitHub contributions but showing emotional tone. Patterns that would take hours to spot in text become visible in seconds.</p></div></div>
+      <div class="cap-item"><span class="cap-num">03</span><div><div class="cap-title">Multi-subreddit comparison</div><p class="cap-desc">Compare sentiment across subreddits side by side. Track how different communities respond to the same events across the same time window.</p></div></div>
+    </div>
+  </section>
+
+  <section class="case-section" data-reveal>
+    <div class="section-label-row"><span class="section-label">screens</span><div class="section-line"></div></div>
+    <div class="gallery-grid single">
+      <figure class="gallery-item">
+        <img src="../screenshots/project-sno-1.png" alt="Snoograph heatmap dashboard" loading="lazy" />
+      </figure>
+    </div>
+  </section>
+
+  <div class="case-cta" id="caseCta">
+    <div class="cta-text">
+      <span class="cta-eyebrow">Live · snoograph.com</span>
+      <div class="cta-heading">Explore Snoograph</div>
+      <p class="cta-sub">Enter any subreddit and see its sentiment history</p>
+    </div>
+    <a class="cta-btn" href="https://snoograph.com" target="_blank" rel="noopener">Open Snoograph <span class="arrow-circ"><svg viewBox="0 0 24 24"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg></span></a>
+  </div>
+
+  <footer class="case-footer">
+    <div class="footer-wordmark">Applied<br>Labs</div>
+    <a class="footer-next" href="/projects/siginspector.html">
+      <span class="footer-next-label">Back to first</span>
+      <span class="footer-next-name">SigInspector <span class="arrow-circ"><svg viewBox="0 0 24 24"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg></span></span>
+    </a>
+  </footer>
+
+</div>
+
+<script>
+  // Build heatmap grid
+  const colors=['#1e2330','#1e2330','#2a3a5c','#1e2330','#4f7ec4','#7c9ef5','#3b5998','#1e2330','#2a3a5c','#7c9ef5','#a5c4ff','#7c9ef5','#4f7ec4','#3b5998','#1e2330','#2a3a5c','#3b5998','#1e2330','#4f7ec4','#7c9ef5','#c8d4e8','#a5c4ff','#4f7ec4','#1e2330','#2a3a5c','#7c9ef5','#a5c4ff','#c8d4e8','#7c9ef5','#1e2330','#1e2330','#4f7ec4','#7c9ef5','#a5c4ff'];
+  const grid=document.getElementById('heatmapGrid');
+  ['W1','W2','W3','W4','W5'].forEach((w,wi)=>{
+    const row=document.createElement('div'); row.className='sn-row';
+    const lbl=document.createElement('div'); lbl.className='sn-row-label'; lbl.textContent=w; row.appendChild(lbl);
+    const cells=document.createElement('div'); cells.className='sn-cells';
+    for(let d=0;d<7;d++){
+      const cell=document.createElement('div'); cell.className='sn-cell';
+      cell.style.setProperty('--cell-color',colors[(wi*7+d)%colors.length]);
+      cell.dataset.delay=((wi*7+d)*0.025).toFixed(3); cells.appendChild(cell);
+    }
+    row.appendChild(cells); grid.appendChild(row);
+  });
+
+  window.onVisualReveal = () => document.querySelectorAll('.sn-cell').forEach(c => {
+    c.style.setProperty('--sc-delay', c.dataset.delay+'s');
+    c.classList.add('sc-in');
+  });
+</script>
+<script src="case.js"></script>
+</body>
+</html>

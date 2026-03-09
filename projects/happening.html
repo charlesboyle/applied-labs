@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Happening / Applied Labs</title>
+  <meta name="description" content="Free weekend event discovery across all seven UAE emirates." />
+  <link rel="icon" type="image/png" sizes="32x32" href="https://kzdhwwwqqtrstswsywrr.supabase.co/storage/v1/object/public/media/applied/applied-32.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="case.css" />
+  <style>
+    .case-visual { background: #0f0e0b; }
+    .hap-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: #13120e; border-bottom: 1px solid rgba(255,255,255,.04); }
+    .hap-logo { font-family: "Syne", sans-serif; font-size: 13px; font-weight: 800; letter-spacing: .04em; color: #e6dfd3; }
+    .hap-sub { font-size: 10px; color: #5a544b; letter-spacing: .08em; font-family: "JetBrains Mono", monospace; }
+    .hap-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; padding: 14px; }
+    .hap-card { background: #161512; border: 1px solid rgba(255,255,255,.055); border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 6px; opacity: 0; transform: translateY(8px); }
+    .hap-card.hc-in { animation: hc-arrive .4s var(--ease-out) var(--hc-delay,0s) forwards; }
+    @keyframes hc-arrive { to { opacity: 1; transform: none; } }
+    .hap-emirate { font-size: 9px; font-weight: 500; letter-spacing: .12em; text-transform: uppercase; color: var(--hc-color,#c8c2b8); font-family: "JetBrains Mono", monospace; }
+    .hap-event-name { font-size: 11px; font-weight: 600; color: #e6dfd3; line-height: 1.3; font-family: "Syne", sans-serif; }
+    .hap-venue { font-size: 10px; color: #5a544b; font-family: "JetBrains Mono", monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .hap-meta { display: flex; align-items: center; gap: 6px; margin-top: 2px; }
+    .hap-tag { font-size: 9px; font-weight: 500; letter-spacing: .06em; padding: 1px 5px; border-radius: 2px; background: var(--hc-bg,rgba(200,194,184,.08)); color: var(--hc-color,#c8c2b8); border: 1px solid var(--hc-border,rgba(200,194,184,.12)); font-family: "JetBrains Mono", monospace; }
+    .hap-dist { font-size: 9px; color: #5a544b; margin-left: auto; font-family: "JetBrains Mono", monospace; }
+    @media (max-width: 600px) { .hap-grid { grid-template-columns: 1fr 1fr; } }
+  </style>
+</head>
+<body>
+
+<svg class="grain" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="100%" height="100%">
+  <filter id="g"><feTurbulence type="fractalNoise" baseFrequency="0.72" numOctaves="4" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/></filter>
+  <rect width="100%" height="100%" filter="url(#g)"/>
+</svg>
+<div class="cursor-ring" id="cursorRing"></div>
+<div class="cursor-dot" id="cursorDot"></div>
+
+<div class="container">
+
+  <nav class="case-nav" aria-label="Breadcrumb">
+    <a class="bc-home" href="/">Applied Labs /</a>
+    <span class="bc-current">Happening</span>
+  </nav>
+
+  <header class="case-header">
+    <div class="case-meta">
+      <span class="meta-tag">Web App</span>
+      <span class="meta-sep">·</span>
+      <span class="meta-tag">UAE</span>
+      <span class="meta-sep">·</span>
+      <span class="meta-tag meta-live">Live</span>
+    </div>
+    <h1 class="case-title">Happening</h1>
+    <p class="case-tagline">Free weekend events across all seven UAE emirates, sorted by how far you are from them.</p>
+  </header>
+
+  <div class="case-visual" id="caseVisual">
+    <div class="hap-header">
+      <span class="hap-logo">Happening</span>
+      <span class="hap-sub">This Weekend · Free</span>
+    </div>
+    <div class="hap-grid">
+      <div class="hap-card" style="--hc-delay:.2s;--hc-color:#60A5FA;--hc-bg:rgba(96,165,250,.08);--hc-border:rgba(96,165,250,.15)"><span class="hap-emirate">Dubai</span><span class="hap-event-name">Jazz at the Beach</span><span class="hap-venue">JBR Open Beach</span><div class="hap-meta"><span class="hap-tag">Music</span><span class="hap-dist">2.1 km</span></div></div>
+      <div class="hap-card" style="--hc-delay:.38s;--hc-color:#A78BFA;--hc-bg:rgba(167,139,250,.08);--hc-border:rgba(167,139,250,.15)"><span class="hap-emirate">Abu Dhabi</span><span class="hap-event-name">Louvre Free Day</span><span class="hap-venue">Louvre Abu Dhabi</span><div class="hap-meta"><span class="hap-tag">Arts</span><span class="hap-dist">131 km</span></div></div>
+      <div class="hap-card" style="--hc-delay:.54s;--hc-color:#34D399;--hc-bg:rgba(52,211,153,.08);--hc-border:rgba(52,211,153,.15)"><span class="hap-emirate">Sharjah</span><span class="hap-event-name">Art Foundation Open</span><span class="hap-venue">Sharjah Art Foundation</span><div class="hap-meta"><span class="hap-tag">Culture</span><span class="hap-dist">18 km</span></div></div>
+      <div class="hap-card" style="--hc-delay:.7s;--hc-color:#FCD34D;--hc-bg:rgba(252,211,77,.08);--hc-border:rgba(252,211,77,.15)"><span class="hap-emirate">Dubai</span><span class="hap-event-name">Saturday Farmers Market</span><span class="hap-venue">Zabeel Park</span><div class="hap-meta"><span class="hap-tag">Food</span><span class="hap-dist">5.4 km</span></div></div>
+      <div class="hap-card" style="--hc-delay:.84s;--hc-color:#F87171;--hc-bg:rgba(248,113,113,.08);--hc-border:rgba(248,113,113,.15)"><span class="hap-emirate">Abu Dhabi</span><span class="hap-event-name">Cultural Foundation Talk</span><span class="hap-venue">Abu Dhabi Cultural Foundation</span><div class="hap-meta"><span class="hap-tag">Community</span><span class="hap-dist">137 km</span></div></div>
+      <div class="hap-card" style="--hc-delay:.98s;--hc-color:#86EFAC;--hc-bg:rgba(134,239,172,.08);--hc-border:rgba(134,239,172,.15)"><span class="hap-emirate">Ras Al Khaimah</span><span class="hap-event-name">Hiking at Jebel Jais</span><span class="hap-venue">Jebel Jais Mountain</span><div class="hap-meta"><span class="hap-tag">Wellness</span><span class="hap-dist">96 km</span></div></div>
+    </div>
+  </div>
+
+  <section class="case-section" data-reveal>
+    <div class="section-label-row"><span class="section-label">problem</span><div class="section-line"></div></div>
+    <p class="case-prose">Finding free, genuine events in the UAE means checking 20+ separate sites. Most event platforms bury free listings under paid ones, nothing covers all seven emirates, and community events from Reddit never make it onto official calendars.</p>
+  </section>
+
+  <section class="case-section" data-reveal>
+    <div class="section-label-row"><span class="section-label">what we built</span><div class="section-line"></div></div>
+    <div class="capabilities">
+      <div class="cap-item"><span class="cap-num">01</span><div><div class="cap-title">Two-tier scraping</div><p class="cap-desc">Standard scan pulls official venue calendars — Dubai Opera, Louvre Abu Dhabi, Sharjah Art Foundation. Deep scan scrapes Reddit communities (r/dubai, r/abudhabi, r/UAE) for grassroots events that never appear on official lists.</p></div></div>
+      <div class="cap-item"><span class="cap-num">02</span><div><div class="cap-title">Location-first sorting</div><p class="cap-desc">Browser Geolocation API pins your position. Every event is sorted by real distance. Free, this weekend, closest first. No account, no preferences wizard.</p></div></div>
+      <div class="cap-item"><span class="cap-num">03</span><div><div class="cap-title">Community moderation</div><p class="cap-desc">Built-in report flow surfaces spam, duplicates, and outdated listings to keep quality high as the event database grows.</p></div></div>
+    </div>
+  </section>
+
+  <section class="case-section" data-reveal>
+    <div class="section-label-row"><span class="section-label">screens</span><div class="section-line"></div></div>
+    <div class="gallery-grid">
+      <figure class="gallery-item">
+        <img src="../screenshots/project-hap-1.png" alt="Happening landing page" loading="lazy" />
+      </figure>
+      <figure class="gallery-item">
+        <img src="../screenshots/project-hap-2.png" alt="Happening event listings" loading="lazy" />
+      </figure>
+    </div>
+  </section>
+
+  <div class="case-cta" id="caseCta">
+    <div class="cta-text">
+      <span class="cta-eyebrow">Live · happening.ae</span>
+      <div class="cta-heading">See what's Happening</div>
+      <p class="cta-sub">Free events this weekend across the UAE</p>
+    </div>
+    <a class="cta-btn" href="https://happening.ae" target="_blank" rel="noopener">Visit Happening <span class="arrow-circ"><svg viewBox="0 0 24 24"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg></span></a>
+  </div>
+
+  <footer class="case-footer">
+    <div class="footer-wordmark">Applied<br>Labs</div>
+    <a class="footer-next" href="/projects/framed.html">
+      <span class="footer-next-label">Next project</span>
+      <span class="footer-next-name">Framed <span class="arrow-circ"><svg viewBox="0 0 24 24"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg></span></span>
+    </a>
+  </footer>
+
+</div>
+
+<script>window.onVisualReveal = () => document.querySelectorAll('.hap-card').forEach(c => c.classList.add('hc-in'));</script>
+<script src="case.js"></script>
+</body>
+</html>

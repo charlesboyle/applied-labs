@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Framed / Applied Labs</title>
+  <meta name="description" content="Turn screen recordings into frames for Figma." />
+  <link rel="icon" type="image/png" sizes="32x32" href="https://kzdhwwwqqtrstswsywrr.supabase.co/storage/v1/object/public/media/applied/applied-32.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="case.css" />
+  <style>
+    :root {
+      --fr-bg:     #111210;
+      --fr-card:   #1a1c18;
+      --fr-line:   #2a2c28;
+      --fr-ink2:   #7a8570;
+      --fr-accent: #CFE82C;
+    }
+    .case-visual { background: var(--fr-bg); }
+    .fr-header { display: flex; align-items: center; gap: 10px; padding: 10px 16px; background: #0e0f0c; border-bottom: 1px solid var(--fr-line); }
+    .fr-logo { font-family: "Syne", sans-serif; font-size: 12px; font-weight: 800; color: var(--fr-accent); letter-spacing: .02em; }
+    .fr-file { font-size: 10px; color: var(--fr-ink2); font-family: "JetBrains Mono", monospace; margin-left: 4px; }
+    .fr-btn { margin-left: auto; font-size: 10px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #0f1009; background: var(--fr-accent); border-radius: 4px; padding: 4px 10px; font-family: "JetBrains Mono", monospace; }
+    .fr-timeline { padding: 14px 16px 0; }
+    .fr-timeline-label { font-size: 9px; color: var(--fr-ink2); letter-spacing: .1em; text-transform: uppercase; margin-bottom: 8px; font-family: "JetBrains Mono", monospace; }
+    .fr-track { height: 32px; background: var(--fr-card); border: 1px solid var(--fr-line); border-radius: 6px; overflow: hidden; position: relative; display: flex; align-items: center; }
+    .fr-progress { position: absolute; left: 0; top: 0; bottom: 0; width: 58%; background: linear-gradient(90deg,rgba(207,232,44,.12) 0%,rgba(207,232,44,.06) 100%); border-right: 2px solid var(--fr-accent); }
+    .fr-thumb { position: absolute; left: 57.5%; top: 50%; transform: translate(-50%,-50%); width: 10px; height: 24px; background: var(--fr-accent); border-radius: 3px; box-shadow: 0 0 8px rgba(207,232,44,.4); }
+    .fr-marks { position: absolute; inset: 0; display: flex; align-items: center; padding: 0 8px; pointer-events: none; }
+    .fr-mark { flex: 1; height: 100%; border-right: 1px solid rgba(255,255,255,.04); display: flex; align-items: flex-end; padding-bottom: 4px; }
+    .fr-ts { font-size: 8px; color: var(--fr-ink2); opacity: .5; font-family: "JetBrains Mono", monospace; }
+    .fr-frames-label { font-size: 9px; color: var(--fr-ink2); letter-spacing: .1em; text-transform: uppercase; margin: 12px 0 8px; font-family: "JetBrains Mono", monospace; padding: 0 16px; }
+    .fr-frames { display: flex; gap: 8px; padding: 0 16px 14px; overflow-x: auto; scrollbar-width: none; }
+    .fr-frames::-webkit-scrollbar { display: none; }
+    .fr-frame { flex-shrink: 0; width: 88px; height: 56px; border-radius: 5px; background: var(--fr-card); border: 1px solid var(--fr-line); overflow: hidden; position: relative; opacity: 0; transform: scale(.95); }
+    .fr-frame.ff-in { animation: ff-appear .35s var(--ease-out) var(--ff-delay,0s) forwards; }
+    @keyframes ff-appear { to { opacity: 1; transform: none; } }
+    .fr-frame-selected { border-color: var(--fr-accent); box-shadow: 0 0 0 2px rgba(207,232,44,.25); }
+    .fr-frame-inner { width: 100%; height: 100%; background: linear-gradient(135deg,var(--fr-card) 0%,#242620 100%); display: flex; align-items: center; justify-content: center; }
+    .fr-frame-ui { width: 80%; height: 80%; display: flex; flex-direction: column; gap: 3px; opacity: .5; }
+    .fr-ui-bar { height: 4px; border-radius: 1px; background: rgba(255,255,255,.12); }
+    .fr-ui-rect { height: 16px; border-radius: 2px; background: rgba(255,255,255,.06); }
+    .fr-frame-num { position: absolute; bottom: 3px; right: 5px; font-size: 8px; color: rgba(255,255,255,.3); font-family: "JetBrains Mono", monospace; }
+    .fr-extracted-badge { position: absolute; top: 4px; left: 4px; font-size: 7px; font-weight: 700; letter-spacing: .06em; background: var(--fr-accent); color: #0f1009; border-radius: 2px; padding: 1px 4px; font-family: "JetBrains Mono", monospace; }
+  </style>
+</head>
+<body>
+
+<svg class="grain" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="100%" height="100%">
+  <filter id="g"><feTurbulence type="fractalNoise" baseFrequency="0.72" numOctaves="4" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/></filter>
+  <rect width="100%" height="100%" filter="url(#g)"/>
+</svg>
+<div class="cursor-ring" id="cursorRing"></div>
+<div class="cursor-dot" id="cursorDot"></div>
+
+<div class="container">
+
+  <nav class="case-nav" aria-label="Breadcrumb">
+    <a class="bc-home" href="/">Applied Labs /</a>
+    <span class="bc-current">Framed</span>
+  </nav>
+
+  <header class="case-header">
+    <div class="case-meta">
+      <span class="meta-tag">Web Tool</span>
+      <span class="meta-sep">·</span>
+      <span class="meta-tag">Design Workflow</span>
+      <span class="meta-sep">·</span>
+      <span class="meta-tag meta-live">Live</span>
+    </div>
+    <h1 class="case-title">Framed</h1>
+    <p class="case-tagline">Screen recordings into Figma frames. Drop a video, extract the frames you need, export.</p>
+  </header>
+
+  <div class="case-visual" id="caseVisual">
+    <div class="fr-header">
+      <span class="fr-logo">Framed</span>
+      <span class="fr-file">screen-recording-final.mp4</span>
+      <span class="fr-btn">Export to Figma</span>
+    </div>
+    <div class="fr-timeline">
+      <div class="fr-timeline-label">Timeline</div>
+      <div class="fr-track">
+        <div class="fr-marks">
+          <div class="fr-mark"><span class="fr-ts">0:00</span></div>
+          <div class="fr-mark"><span class="fr-ts">0:05</span></div>
+          <div class="fr-mark"><span class="fr-ts">0:10</span></div>
+          <div class="fr-mark"><span class="fr-ts">0:15</span></div>
+          <div class="fr-mark"><span class="fr-ts">0:20</span></div>
+          <div class="fr-mark"><span class="fr-ts">0:25</span></div>
+          <div class="fr-mark"><span class="fr-ts">0:30</span></div>
+          <div class="fr-mark"><span class="fr-ts">0:35</span></div>
+        </div>
+        <div class="fr-progress"></div>
+        <div class="fr-thumb"></div>
+      </div>
+    </div>
+    <div class="fr-frames-label">Extracted Frames · 5 selected</div>
+    <div class="fr-frames">
+      <div class="fr-frame fr-frame-selected" style="--ff-delay:.25s"><div class="fr-frame-inner"><div class="fr-frame-ui"><div class="fr-ui-bar" style="width:80%"></div><div class="fr-ui-rect"></div><div class="fr-ui-bar" style="width:60%"></div></div></div><span class="fr-extracted-badge">F</span><span class="fr-frame-num">#01</span></div>
+      <div class="fr-frame" style="--ff-delay:.4s"><div class="fr-frame-inner"><div class="fr-frame-ui"><div class="fr-ui-bar" style="width:60%"></div><div class="fr-ui-rect"></div><div class="fr-ui-bar" style="width:80%"></div></div></div><span class="fr-frame-num">#02</span></div>
+      <div class="fr-frame fr-frame-selected" style="--ff-delay:.55s"><div class="fr-frame-inner"><div class="fr-frame-ui"><div class="fr-ui-bar" style="width:40%"></div><div class="fr-ui-rect"></div><div class="fr-ui-rect"></div></div></div><span class="fr-extracted-badge">F</span><span class="fr-frame-num">#03</span></div>
+      <div class="fr-frame" style="--ff-delay:.68s"><div class="fr-frame-inner"><div class="fr-frame-ui"><div class="fr-ui-bar" style="width:80%"></div><div class="fr-ui-rect"></div></div></div><span class="fr-frame-num">#04</span></div>
+      <div class="fr-frame fr-frame-selected" style="--ff-delay:.8s"><div class="fr-frame-inner"><div class="fr-frame-ui"><div class="fr-ui-rect"></div><div class="fr-ui-bar" style="width:60%"></div></div></div><span class="fr-extracted-badge">F</span><span class="fr-frame-num">#05</span></div>
+      <div class="fr-frame fr-frame-selected" style="--ff-delay:.92s"><div class="fr-frame-inner"><div class="fr-frame-ui"><div class="fr-ui-bar" style="width:40%"></div><div class="fr-ui-rect"></div><div class="fr-ui-bar" style="width:80%"></div></div></div><span class="fr-extracted-badge">F</span><span class="fr-frame-num">#06</span></div>
+      <div class="fr-frame" style="--ff-delay:1.04s"><div class="fr-frame-inner"><div class="fr-frame-ui"><div class="fr-ui-bar" style="width:60%"></div><div class="fr-ui-rect"></div></div></div><span class="fr-frame-num">#07</span></div>
+    </div>
+  </div>
+
+  <section class="case-section" data-reveal>
+    <div class="section-label-row"><span class="section-label">problem</span><div class="section-line"></div></div>
+    <p class="case-prose">Screen recordings live in video files. Getting specific frames into Figma means a video editor, manual screenshotting, file juggling — and repeating the whole process every time something changes. Designers do this dozens of times a week.</p>
+  </section>
+
+  <section class="case-section" data-reveal>
+    <div class="section-label-row"><span class="section-label">what we built</span><div class="section-line"></div></div>
+    <div class="capabilities">
+      <div class="cap-item"><span class="cap-num">01</span><div><div class="cap-title">Drop and scrub</div><p class="cap-desc">Drop any screen recording. Scrub the timeline to the exact moments you need. The video stays in the browser — nothing uploaded to a server.</p></div></div>
+      <div class="cap-item"><span class="cap-num">02</span><div><div class="cap-title">Frame extraction</div><p class="cap-desc">Select frames from the timeline. Each frame renders at the recording's native resolution using the Canvas API. Pixel-perfect, no compression artifacts.</p></div></div>
+      <div class="cap-item"><span class="cap-num">03</span><div><div class="cap-title">Figma export</div><p class="cap-desc">Export frames as a ZIP of PNGs ready to drag into any Figma file. No plugin required on the Figma side.</p></div></div>
+    </div>
+  </section>
+
+  <section class="case-section" data-reveal>
+    <div class="section-label-row"><span class="section-label">screens</span><div class="section-line"></div></div>
+    <div class="gallery-grid single">
+      <figure class="gallery-item">
+        <img src="../screenshots/project-fra-1.png" alt="Framed app" loading="lazy" />
+      </figure>
+    </div>
+  </section>
+
+  <div class="case-cta" id="caseCta">
+    <div class="cta-text">
+      <span class="cta-eyebrow">Live · framed-six.vercel.app</span>
+      <div class="cta-heading">Try Framed</div>
+      <p class="cta-sub">Drop a recording and export frames in seconds</p>
+    </div>
+    <a class="cta-btn" href="https://framed-six.vercel.app/" target="_blank" rel="noopener">Open Framed <span class="arrow-circ"><svg viewBox="0 0 24 24"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg></span></a>
+  </div>
+
+  <footer class="case-footer">
+    <div class="footer-wordmark">Applied<br>Labs</div>
+    <a class="footer-next" href="/projects/snoograph.html">
+      <span class="footer-next-label">Next project</span>
+      <span class="footer-next-name">Snoograph <span class="arrow-circ"><svg viewBox="0 0 24 24"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg></span></span>
+    </a>
+  </footer>
+
+</div>
+
+<script>window.onVisualReveal = () => document.querySelectorAll('.fr-frame').forEach(c => c.classList.add('ff-in'));</script>
+<script src="case.js"></script>
+</body>
+</html>
