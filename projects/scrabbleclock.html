@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Scrabble Clock / Applied Labs</title>
+  <meta name="description" content="Chess-clock-style timer for physical Scrabble games with a built-in word checker." />
+  <link rel="icon" type="image/png" sizes="32x32" href="https://kzdhwwwqqtrstswsywrr.supabase.co/storage/v1/object/public/media/applied/applied-32.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="case.css" />
+  <style>
+    .case-visual { background: #1e1208; }
+
+    /* Mini game setup mockup */
+    .sc-wrap { font-family: "Syne", sans-serif; padding: 20px 24px; display: flex; flex-direction: column; align-items: center; gap: 14px; }
+    .sc-logo { text-align: center; margin-bottom: 4px; }
+    .sc-logo-title { font-size: 18px; font-weight: 800; letter-spacing: .08em; color: #f0e8d8; text-transform: uppercase; }
+    .sc-tile-row { display: flex; gap: 4px; justify-content: center; margin-top: 4px; }
+    .sc-tile { width: 28px; height: 28px; background: #e8dfc0; border-radius: 3px; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; color: #2a1a08; box-shadow: 0 2px 0 #b8a870, inset 0 1px 0 rgba(255,255,255,.4); }
+    .sc-tile.sc-tile-clock { background: #2a1a08; color: #c8b870; }
+
+    .sc-panel { width: 100%; max-width: 360px; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08); border-radius: 8px; overflow: hidden; }
+    .sc-panel-head { display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-bottom: 1px solid rgba(255,255,255,.06); }
+    .sc-panel-label { font-family: "JetBrains Mono", monospace; font-size: 9px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: #a89060; }
+    .sc-panel-body { padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; }
+
+    .sc-player-row { display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.06); border-radius: 5px; padding: 7px 10px; }
+    .sc-player-tile { width: 22px; height: 22px; background: #e8dfc0; border-radius: 2px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; color: #2a1a08; flex-shrink: 0; }
+    .sc-player-name { font-size: 11px; color: #c8baa0; font-family: "JetBrains Mono", monospace; }
+
+    .sc-time-chips { display: flex; gap: 5px; flex-wrap: wrap; }
+    .sc-chip { height: 28px; min-width: 36px; padding: 0 8px; border-radius: 4px; background: #2e1e0a; border: 1px solid rgba(255,255,255,.1); display: flex; align-items: center; justify-content: center; font-family: "JetBrains Mono", monospace; font-size: 10px; color: #a89060; }
+    .sc-chip.active { background: #e8dfc0; color: #2a1a08; border-color: #e8dfc0; font-weight: 700; }
+
+    .sc-start-btn { width: 100%; max-width: 360px; height: 40px; background: #2e7d4f; border-radius: 6px; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 11px; font-weight: 700; letter-spacing: .1em; color: #fff; font-family: "JetBrains Mono", monospace; text-transform: uppercase; opacity: 0; transform: translateY(6px); transition: opacity .4s .9s, transform .4s .9s; }
+    .sc-start-btn.sc-in { opacity: 1; transform: none; }
+    .sc-panel { opacity: 0; transform: translateY(8px); transition: opacity .4s var(--sc-delay,.2s), transform .4s var(--sc-delay,.2s); }
+    .sc-panel.sc-in { opacity: 1; transform: none; }
+  </style>
+</head>
+<body>
+
+<svg class="grain" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" width="100%" height="100%">
+  <filter id="g"><feTurbulence type="fractalNoise" baseFrequency="0.72" numOctaves="4" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/></filter>
+  <rect width="100%" height="100%" filter="url(#g)"/>
+</svg>
+<div class="cursor-ring" id="cursorRing"></div>
+<div class="cursor-dot" id="cursorDot"></div>
+
+<div class="container">
+
+  <nav class="case-nav" aria-label="Breadcrumb">
+    <a class="bc-home" href="/">Applied Labs /</a>
+    <span class="bc-current">Scrabble Clock</span>
+  </nav>
+
+  <header class="case-header">
+    <div class="case-meta">
+      <span class="meta-tag">Web App</span>
+      <span class="meta-sep">·</span>
+      <span class="meta-tag">2025</span>
+      <span class="meta-sep">·</span>
+      <span class="meta-tag meta-live">Live</span>
+    </div>
+    <h1 class="case-title">Scrabble Clock</h1>
+    <p class="case-tagline">A chess-clock-style timer for physical Scrabble. Built-in word checker means one less thing on the table.</p>
+  </header>
+
+  <div class="case-visual" id="caseVisual">
+    <div class="sc-wrap">
+      <div class="sc-logo">
+        <div class="sc-logo-title">Scrabble</div>
+        <div class="sc-tile-row">
+          <div class="sc-tile">C</div>
+          <div class="sc-tile">L</div>
+          <div class="sc-tile sc-tile-clock">⏱</div>
+          <div class="sc-tile">C</div>
+          <div class="sc-tile">K</div>
+        </div>
+      </div>
+
+      <div class="sc-panel" style="--sc-delay:.2s">
+        <div class="sc-panel-head">
+          <span class="sc-panel-label">Players</span>
+        </div>
+        <div class="sc-panel-body">
+          <div class="sc-player-row"><div class="sc-player-tile">A</div><span class="sc-player-name">Player 1</span></div>
+          <div class="sc-player-row"><div class="sc-player-tile">B</div><span class="sc-player-name">Player 2</span></div>
+        </div>
+      </div>
+
+      <div class="sc-panel" style="--sc-delay:.45s">
+        <div class="sc-panel-head">
+          <span class="sc-panel-label">Total Time / Player</span>
+        </div>
+        <div class="sc-panel-body">
+          <div class="sc-time-chips">
+            <div class="sc-chip active">∞</div>
+            <div class="sc-chip">5</div>
+            <div class="sc-chip">10</div>
+            <div class="sc-chip">15</div>
+            <div class="sc-chip">20</div>
+            <div class="sc-chip">25</div>
+            <div class="sc-chip">30</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sc-panel" style="--sc-delay:.65s">
+        <div class="sc-panel-head">
+          <span class="sc-panel-label">Per Round Limit</span>
+        </div>
+        <div class="sc-panel-body">
+          <div class="sc-time-chips">
+            <div class="sc-chip">–</div>
+            <div class="sc-chip">30s</div>
+            <div class="sc-chip active">1m</div>
+            <div class="sc-chip">1.5m</div>
+            <div class="sc-chip">2m</div>
+            <div class="sc-chip">3m</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sc-start-btn">▶ Start Game</div>
+    </div>
+  </div>
+
+  <section class="case-section" data-reveal>
+    <div class="section-label-row"><span class="section-label">problem</span><div class="section-line"></div></div>
+    <p class="case-prose">Physical Scrabble games have no built-in clock. Players use phone timers that can't track per-player time, and disputed words mean stopping to look up a dictionary. The result is slower games, more arguments, and a phone in everyone's hand at the table.</p>
+  </section>
+
+  <section class="case-section" data-reveal>
+    <div class="section-label-row"><span class="section-label">what we built</span><div class="section-line"></div></div>
+    <div class="capabilities">
+      <div class="cap-item">
+        <span class="cap-num">01</span>
+        <div><div class="cap-title">Chess-clock timing</div><p class="cap-desc">Configure 2–6 players with a total time budget per player and an optional per-round shot clock. One tap passes the clock. Time pressure is visible at a glance.</p></div>
+      </div>
+      <div class="cap-item">
+        <span class="cap-num">02</span>
+        <div><div class="cap-title">Built-in word checker</div><p class="cap-desc">Type any word to validate it instantly against SOWPODS via the Free Dictionary API and Datamuse fallback. No separate dictionary app needed mid-game.</p></div>
+      </div>
+      <div class="cap-item">
+        <span class="cap-num">03</span>
+        <div><div class="cap-title">2-letter word reference</div><p class="cap-desc">A browsable SOWPODS 2-letter word panel sits alongside the timer, filterable by starting letter — the reference sheet serious players always want nearby.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="case-section" data-reveal>
+    <div class="section-label-row"><span class="section-label">screens</span><div class="section-line"></div></div>
+    <div class="gallery-grid">
+      <figure class="gallery-item">
+        <img src="../screenshots/project-sct-1.png" alt="Scrabble Clock game setup" loading="lazy" />
+      </figure>
+      <figure class="gallery-item">
+        <img src="../screenshots/project-sct-2.png" alt="Scrabble Clock game timer with word tools" loading="lazy" />
+      </figure>
+    </div>
+  </section>
+
+  <div class="case-cta" id="caseCta">
+    <div class="cta-text">
+      <span class="cta-eyebrow">Live · scrabbleclock.com</span>
+      <div class="cta-heading">Play Scrabble Clock</div>
+      <p class="cta-sub">Free, no account needed</p>
+    </div>
+    <a class="cta-btn" href="https://www.scrabbleclock.com/" target="_blank" rel="noopener">Visit Scrabble Clock <span class="arrow-circ"><svg viewBox="0 0 24 24"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg></span></a>
+  </div>
+
+  <footer class="case-footer">
+    <div class="footer-wordmark">Applied<br>Labs</div>
+    <a class="footer-next" href="/projects/siginspector.html">
+      <span class="footer-next-label">Next project</span>
+      <span class="footer-next-name">SigInspector <span class="arrow-circ"><svg viewBox="0 0 24 24"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg></span></span>
+    </a>
+  </footer>
+
+</div>
+
+<script>window.onVisualReveal = () => { document.querySelectorAll('.sc-panel').forEach(c => c.classList.add('sc-in')); document.querySelector('.sc-start-btn').classList.add('sc-in'); };</script>
+<script src="case.js"></script>
+</body>
+</html>
