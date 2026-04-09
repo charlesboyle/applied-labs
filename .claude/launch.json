@@ -1,0 +1,23 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "applied-labs",
+      "runtimeExecutable": "/bin/bash",
+      "runtimeArgs": ["-c", "export PATH=/opt/homebrew/bin:$PATH && cd /Users/afnan/Projects/applied-labs && npx serve . -p 3000"],
+      "port": 3000
+    },
+    {
+      "name": "happening",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": ["-c", "cd '/Users/afnan/Documents/Code projects/happening' && npm run dev -- --port 3001"],
+      "port": 3001
+    }
+  ,{
+      "name": "tile-time-tally",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": ["-c", "cd '/Users/afnan/Documents/applied-labs/tile-time-tally' && npm run dev"],
+      "port": 8080
+    }
+  ]
+}
