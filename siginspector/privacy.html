@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Privacy Policy — SigInspector</title>
-  <meta name="description" content="SigInspector privacy policy. No data is stored, transmitted, or shared.">
+  <meta name="description" content="SigInspector privacy policy. Captured data stays in your browser: never transmitted, shared or sold.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -182,6 +182,21 @@
       border-radius: 4px;
       padding: 2px 7px;
     }
+    /* neutral variant for qualified answers */
+    .note-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #6B6A67;
+      background: #F4F4F2;
+      border: 1px solid #E0DFDC;
+      border-radius: 4px;
+      padding: 2px 7px;
+    }
+    .note-chip { white-space: normal; text-align: left; }
+    .data-table td .cell-note { display: block; margin-top: 4px; font-weight: 400; color: var(--ink2, inherit); font-size: 0.92em; }
 
     /* ── Footer ── */
     footer {
@@ -226,37 +241,39 @@
 <main class="page">
   <header class="page-header">
     <h1>Privacy Policy</h1>
-    <p class="page-date">Last updated: February 2026</p>
+    <p class="page-date">Last updated: October 2026</p>
   </header>
 
   <div class="prose">
 
     <div class="prose-section">
       <h2>Overview</h2>
-      <p>SigInspector is a Chrome DevTools extension for developers. It intercepts and displays Statsig SDK network traffic (feature gate evaluations, experiment exposures, and custom events) directly inside the Chrome DevTools panel of the tab being inspected.</p>
-      <p style="margin-top:10px">This policy describes how SigInspector handles data encountered during its operation.</p>
+      <p>SigInspector is a Chrome DevTools extension for developers. It shows the analytics and experimentation traffic a web page sends (events, feature flag results and experiment exposures from the Statsig, Mixpanel, Amplitude and PostHog JavaScript SDKs) in a panel inside Chrome DevTools, for the tab being inspected.</p>
+      <p style="margin-top:10px">This policy describes how SigInspector handles the data it sees.</p>
     </div>
 
     <hr class="prose-divider">
 
     <div class="prose-section">
       <h2>What SigInspector Does</h2>
-      <p>SigInspector injects a content script into web pages to intercept outbound network calls made by the Statsig JavaScript SDK — specifically requests to known Statsig API endpoints (e.g. <code>statsigapi.net</code>, <code>featuregates.org</code>). The request and response payloads are decoded and displayed in the SigInspector DevTools panel.</p>
-      <p style="margin-top:10px">This interception is intentional and controlled by the developer: the extension only activates when the SigInspector panel is open in Chrome DevTools for that specific tab.</p>
+      <p>SigInspector adds a script to web pages that watches the page's outgoing network requests. It only looks at requests whose address and contents match one of the supported SDKs: requests to their API domains (for example <code>statsigapi.net</code>, <code>api-js.mixpanel.com</code>, <code>api2.amplitude.com</code>, <code>us.i.posthog.com</code>), and, for Mixpanel, Amplitude and PostHog, the same requests sent through a website's own domain. All other traffic passes through untouched and is not read.</p>
+      <p style="margin-top:10px">Matching requests and responses are decoded and shown in the SigInspector DevTools panel. SigInspector does not change, block or delay any request.</p>
+      <p style="margin-top:10px">Capture is tied to the DevTools panel. While no SigInspector panel is open for a tab, the extension discards what it sees and stops reading the traffic. Requests made in the first moments of a page load, before the extension knows whether a panel is open, are held briefly and then dropped if no panel is open.</p>
     </div>
 
     <hr class="prose-divider">
 
     <div class="prose-section">
       <h2>Data Accessed</h2>
-      <p>SigInspector reads the content of Statsig SDK API requests and responses. These payloads may include:</p>
+      <p>SigInspector reads the content of the supported SDKs' requests and responses. Depending on what the website sends, these may include:</p>
       <ul style="margin-top:12px">
-        <li>Feature gate names and evaluation results</li>
-        <li>Experiment names and assigned groups</li>
-        <li>Custom event names and values</li>
-        <li>Statsig user context fields set by the developer's application (e.g. <code>userID</code>, <code>email</code>, <code>customIDs</code>)</li>
+        <li>Event names, values and properties</li>
+        <li>Feature flag and gate names and their results</li>
+        <li>Experiment names and assigned groups or variants</li>
+        <li>User and device identifiers and user properties set by the website (for example <code>userID</code>, <code>distinct_id</code>, <code>user_id</code>, <code>device_id</code>, <code>email</code>)</li>
+        <li>Page details the SDK attaches to events (for example the page URL, browser and operating system)</li>
       </ul>
-      <p style="margin-top:12px">This data is accessed <strong>solely to display it to the developer</strong> who is actively using the DevTools panel.</p>
+      <p style="margin-top:12px">This data is used <strong>only to display it to the developer</strong> using the DevTools panel.</p>
     </div>
 
     <hr class="prose-divider">
@@ -271,42 +288,46 @@
           </tr>
         </thead>
         <tbody>
-          <tr><td>Data stored on device</td><td><span class="no-chip">No</span></td></tr>
-          <tr><td>Data transmitted to any server</td><td><span class="no-chip">No</span></td></tr>
-          <tr><td>Data shared with third parties</td><td><span class="no-chip">No</span></td></tr>
-          <tr><td>Data used for analytics or profiling</td><td><span class="no-chip">No</span></td></tr>
-          <tr><td>Data retained after panel is closed</td><td><span class="no-chip">No</span></td></tr>
+          <tr><td>Captured data sent to any server</td><td><span class="no-chip">No</span></td></tr>
+          <tr><td>Captured data shared with third parties</td><td><span class="no-chip">No</span></td></tr>
+          <tr><td>Captured data used for analytics or profiling</td><td><span class="no-chip">No</span></td></tr>
+          <tr><td>Captured data written to disk</td><td><span class="no-chip">No</span><span class="cell-note">Only if you choose Export JSON</span></td></tr>
+          <tr><td>Captured data kept after the panel is closed</td><td><span class="note-chip">With Event memory on</span><span class="cell-note">Kept in memory for that tab until you clear it, close the tab or quit Chrome</span></td></tr>
+          <tr><td>Settings stored on your device</td><td><span class="note-chip">Preferences only</span><span class="cell-note">Theme, layout, selected source, Event memory on/off</span></td></tr>
         </tbody>
       </table>
-      <p style="margin-top:14px">All data accessed by SigInspector exists exclusively in the browser's memory for the duration of the active DevTools session. It is never written to disk, never sent to any external server (including any server operated by the extension author), and is discarded when the DevTools panel is closed or the tab is navigated.</p>
+      <p style="margin-top:14px">Captured events live in the DevTools panel's memory and in a per-tab buffer of up to 500 events in Chrome's session storage. Session storage is held in memory, not written to disk, and is cleared when Chrome closes. The buffer lets events survive page reloads (the Event memory setting) and the browser briefly pausing the extension in the background. Clearing events in the panel empties it.</p>
+      <p style="margin-top:10px">SigInspector never sends captured data to any external server, including any server run by the extension's author. The panel's fonts are bundled with the extension, so opening the panel makes no network requests. Links to vendor documentation open only when you click them.</p>
+      <p style="margin-top:10px"><strong>Export JSON</strong> saves the captured events to a file on your computer, only when you click it.</p>
     </div>
 
     <hr class="prose-divider">
 
     <div class="prose-section">
       <h2>Permissions</h2>
-      <p>SigInspector requests the <code>&lt;all_urls&gt;</code> host permission. This is required because Statsig-instrumented pages can be on any domain, and the content script must be injected before the page loads (<code>document_start</code>) to intercept SDK calls reliably. The extension does not use this permission to access, read, or monitor any content outside of Statsig SDK API traffic.</p>
+      <p>SigInspector requests no browser API permissions and no host permissions.</p>
+      <p style="margin-top:10px">Its content scripts run on all sites. Websites send analytics from their own domains and often through their own servers, so the extension cannot know in advance which sites use these SDKs. The scripts start before the page's own code (<code>document_start</code>) and run in all frames so the first events and events from embedded frames are captured. They are used only to read the matching SDK traffic described above.</p>
     </div>
 
     <hr class="prose-divider">
 
     <div class="prose-section">
       <h2>No Remote Code</h2>
-      <p>SigInspector does not load or execute any remote code. All extension logic is bundled within the extension package.</p>
+      <p>SigInspector does not load or run any remote code. All extension code and assets are included in the extension package.</p>
     </div>
 
     <hr class="prose-divider">
 
     <div class="prose-section">
       <h2>Children's Privacy</h2>
-      <p>SigInspector is a developer tool intended for use by software developers. It is not directed at children and does not knowingly interact with data from users under the age of 13.</p>
+      <p>SigInspector is a developer tool for software developers. It is not directed at children and does not knowingly handle data from users under the age of 13.</p>
     </div>
 
     <hr class="prose-divider">
 
     <div class="prose-section">
       <h2>Changes to This Policy</h2>
-      <p>If this policy changes, the updated version will be committed to this repository with a revised "Last updated" date above.</p>
+      <p>When this policy changes, the updated version is published at this address with a new "Last updated" date.</p>
     </div>
 
     <hr class="prose-divider">
