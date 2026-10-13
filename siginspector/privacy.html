@@ -293,7 +293,7 @@
           <tr><td>Captured data used for analytics or profiling</td><td><span class="no-chip">No</span></td></tr>
           <tr><td>Captured data written to disk</td><td><span class="no-chip">No</span><span class="cell-note">Only if you choose Export JSON</span></td></tr>
           <tr><td>Captured data kept after the panel is closed</td><td><span class="note-chip">With Event memory on</span><span class="cell-note">Kept in memory for that tab until you clear it, close the tab or quit Chrome</span></td></tr>
-          <tr><td>Settings stored on your device</td><td><span class="note-chip">Preferences only</span><span class="cell-note">Theme, layout, selected source, Event memory on/off</span></td></tr>
+          <tr><td>Settings stored on your device</td><td><span class="note-chip">Preferences only</span><span class="cell-note">Theme, layout, selected source, Event memory on/off, and whether the one-time "What's new" note is due after an update</span></td></tr>
         </tbody>
       </table>
       <p style="margin-top:14px">Captured events live in the DevTools panel's memory and in a per-tab buffer of up to 500 events in Chrome's session storage. Session storage is held in memory, not written to disk, and is cleared when Chrome closes. The buffer lets events survive page reloads (the Event memory setting) and the browser briefly pausing the extension in the background. Clearing events in the panel empties it.</p>
@@ -305,7 +305,7 @@
 
     <div class="prose-section">
       <h2>Permissions</h2>
-      <p>SigInspector requests no browser API permissions and no host permissions.</p>
+      <p>SigInspector requests one browser permission, <code>storage</code>, and no host permissions. Storage holds the per-tab event buffer in Chrome's session storage (in memory, cleared when Chrome closes) and remembers, on your device, whether the "What's new" note should be shown after an update. No captured data is kept in the device's local storage.</p>
       <p style="margin-top:10px">Its content scripts run on all sites. Websites send analytics from their own domains and often through their own servers, so the extension cannot know in advance which sites use these SDKs. The scripts start before the page's own code (<code>document_start</code>) and run in all frames so the first events and events from embedded frames are captured. They are used only to read the matching SDK traffic described above.</p>
     </div>
 
